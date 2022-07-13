@@ -1,4 +1,4 @@
-module progetto1
+module libp2p-sender
 
 go 1.18
 

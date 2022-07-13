@@ -1,4 +1,4 @@
-module monitoring2
+module libp2p-receiver
 
 go 1.18
 

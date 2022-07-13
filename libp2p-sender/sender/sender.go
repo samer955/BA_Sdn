@@ -6,9 +6,9 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
+	"libp2p-sender/discovery"
+	"libp2p-sender/variables"
 	"log"
-	"progetto1/discovery"
-	"progetto1/variables"
 	"time"
 )
 

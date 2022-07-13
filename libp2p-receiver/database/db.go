@@ -10,7 +10,7 @@ const (
 	port     = 5432
 	user     = "user"
 	password = "password"
-	dbname   = "mydb"
+	dbname   = "database"
 )
 
 var db *sql.DB
