@@ -3,6 +3,7 @@ module libp2p-sender
 go 1.18
 
 require (
+	github.com/beevik/ntp v0.3.0
 	github.com/lib/pq v1.10.6
 	github.com/libp2p/go-libp2p v0.20.2
 	github.com/libp2p/go-libp2p-core v0.16.1

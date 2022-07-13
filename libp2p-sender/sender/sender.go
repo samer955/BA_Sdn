@@ -3,6 +3,7 @@ package sender
 import (
 	"context"
 	"encoding/json"
+	"github.com/beevik/ntp"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -18,7 +19,15 @@ func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer variable
 			continue
 		}
 		//Latency will after calculated in millis
-		peer.Time = time.Now().UnixMilli()
+		response, err := ntp.Query("0.beevik-ntp.pool.ntp.org")
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		now := time.Now().Add(response.ClockOffset)
+
+		peer.Time = now.UnixMilli()
 
 		//JSON encoding of peerInfo struct in order to send the data as []byte.
 		peerInfoJson, _ := json.Marshal(peer)
