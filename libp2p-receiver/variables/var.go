@@ -3,9 +3,9 @@ package variables
 import "time"
 
 type PeerInfo struct {
-	Id   string `json:"node_id"`
-	Ip   string `json:"ip"`
-	Time int64  `json:"time"`
+	Id   string    `json:"node_id"`
+	Ip   string    `json:"ip"`
+	Time time.Time `json:"time"`
 }
 
 type Cpu struct {

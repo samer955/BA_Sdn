@@ -19,15 +19,8 @@ func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer variable
 			continue
 		}
 		//Latency will after calculated in millis
-		response, err := ntp.Query("0.beevik-ntp.pool.ntp.org")
 
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		now := time.Now().Add(response.ClockOffset)
-
-		peer.Time = now.UnixMilli()
+		peer.Time = time.Now()
 
 		//JSON encoding of peerInfo struct in order to send the data as []byte.
 		peerInfoJson, _ := json.Marshal(peer)
@@ -39,7 +32,7 @@ func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer variable
 			log.Println("Error publishing content ", content.Error())
 		}
 		//wait 10 seconds before send another timestamp
-		time.Sleep(1 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 }
 
@@ -87,18 +80,27 @@ func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *varia
 			log.Println("Error publishing content ", content.Error())
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 }
 
 func updateRamPercentage(ram *variables.Ram) {
 	vmStat, _ := mem.VirtualMemory()
 	ram.Usage = int(vmStat.UsedPercent)
-	ram.Time = time.Now()
+
+	now, err := ntp.Time("0.beevik-ntp.pool.ntp.org")
+	if err != nil {
+		log.Println(err)
+	}
+	ram.Time = now
 }
 
 func updateCpuPercentage(c *variables.Cpu) {
 	cpuUsage, _ := cpu.Percent(0, false)
 	c.Usage = int(cpuUsage[0])
-	c.Time = time.Now()
+	now, err := ntp.Time("0.beevik-ntp.pool.ntp.org")
+	if err != nil {
+		log.Println(err)
+	}
+	c.Time = now
 }
