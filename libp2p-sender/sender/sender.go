@@ -3,7 +3,6 @@ package sender
 import (
 	"context"
 	"encoding/json"
-	"github.com/beevik/ntp"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -20,11 +19,7 @@ func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer variable
 		}
 		//Latency will after calculated in millis
 
-		response, err := ntp.Query("0.beevik-ntp.pool.ntp.org")
-		if err != nil {
-			log.Println(err)
-		}
-		now := time.Now().Add(response.ClockOffset)
+		now := time.Now()
 
 		peer.Time = now
 
@@ -93,25 +88,11 @@ func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *varia
 func updateRamPercentage(ram *variables.Ram) {
 	vmStat, _ := mem.VirtualMemory()
 	ram.Usage = int(vmStat.UsedPercent)
-
-	response, err := ntp.Query("0.beevik-ntp.pool.ntp.org")
-	if err != nil {
-		log.Println(err)
-	}
-	now := time.Now().Add(response.ClockOffset)
-
-	ram.Time = now
+	ram.Time = time.Now()
 }
 
 func updateCpuPercentage(c *variables.Cpu) {
 	cpuUsage, _ := cpu.Percent(0, false)
 	c.Usage = int(cpuUsage[0])
-
-	response, err := ntp.Query("0.beevik-ntp.pool.ntp.org")
-	if err != nil {
-		log.Println(err)
-	}
-	now := time.Now().Add(response.ClockOffset)
-
-	c.Time = now
+	c.Time = time.Now()
 }

@@ -3,7 +3,6 @@ package receiver
 import (
 	"context"
 	"encoding/json"
-	"github.com/beevik/ntp"
 	host2 "github.com/libp2p/go-libp2p-core/host"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"libp2p-receiver/database"
@@ -31,22 +30,14 @@ func ReadTimeMessages(subscribe *pubsub.Subscription, context context.Context, n
 				//Latency is calculated from the time when the peer send the message
 				//and when the receiver reads it (in millis)
 
-				response, err := ntp.Query("0.beevik-ntp.pool.ntp.org")
-				if err != nil {
-					log.Println(err)
-				}
-				now := time.Now().Add(response.ClockOffset)
-
-				source := peer.Time.UnixMilli()
-				actual := now.UnixMilli()
-				latency := actual - source
+				latency := time.Since(peer.Time).Milliseconds()
 
 				log.Println("latency :", latency)
 
 				//Here we store latency of the peer in the database as well as node_id, ip_address
 				//in order to identify it
 				_, err = db.Exec("INSERT INTO latency(node_id,ip,latency,time) "+
-					"VALUES($1,$2,$3,$4)", peer.Id, peer.Ip, latency, now)
+					"VALUES($1,$2,$3,$4)", peer.Id, peer.Ip, latency, time.Now())
 
 				if err != nil {
 					log.Fatal(err)
