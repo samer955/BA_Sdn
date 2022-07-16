@@ -3,6 +3,7 @@ create table latency
     id      serial
         constraint latency_pk
             primary key,
+    hostname text,
     node_id text,
     ip      text,
     latency integer,
@@ -17,6 +18,7 @@ create table cpu
     id      serial
         constraint cpu_pk
             primary key,
+    hostname text,
     node_id text,
     ip      text,
     usage   integer,
@@ -31,6 +33,7 @@ create table ram
     id      serial
         constraint ram_pk
             primary key,
+    hostname text,
     node_id text,
     ip      text,
     usage   integer,

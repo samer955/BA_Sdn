@@ -36,8 +36,8 @@ func ReadTimeMessages(subscribe *pubsub.Subscription, context context.Context, n
 
 				//Here we store latency of the peer in the database as well as node_id, ip_address
 				//in order to identify it
-				_, err = db.Exec("INSERT INTO latency(node_id,ip,latency,time) "+
-					"VALUES($1,$2,$3,$4)", peer.Id, peer.Ip, latency, time.Now())
+				_, err = db.Exec("INSERT INTO latency(hostname,node_id,ip,latency,time) "+
+					"VALUES($1,$2,$3,$4,$5)", peer.Hostname, peer.Id, peer.Ip, latency, time.Now())
 
 				if err != nil {
 					log.Fatal(err)
@@ -62,8 +62,9 @@ func ReadRamInformation(subscribe *pubsub.Subscription, ctx context.Context, nod
 
 				//Here we store cpu usage percentage of the peer in the database as well
 				//as node_id, ip_address to identify the peer
-				_, err = db.Exec("INSERT INTO ram(node_id,ip,usage,time)"+
-					" VALUES($1,$2,$3,$4)",
+				_, err = db.Exec("INSERT INTO ram(hostname,node_id,ip,usage,time)"+
+					" VALUES($1,$2,$3,$4,$5)",
+					ram.Hostname,
 					ram.Id,
 					ram.Ip,
 					ram.Usage,
@@ -94,8 +95,9 @@ func ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context, nod
 
 				//Here we store cpu usage percentage of the peer in the database as well
 				//as node_id, ip_address to identify the peer
-				_, err = db.Exec("INSERT INTO cpu(node_id,ip,usage,time)"+
-					" VALUES($1,$2,$3,$4)",
+				_, err = db.Exec("INSERT INTO cpu(hostname,node_id,ip,usage,time)"+
+					" VALUES($1,$2,$3,$4,$5)",
+					cpu.Hostname,
 					cpu.Id,
 					cpu.Ip,
 					cpu.Usage,

@@ -3,6 +3,7 @@ package sender
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -12,12 +13,14 @@ import (
 	"time"
 )
 
-func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer variables.PeerInfo) {
+func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer *variables.PeerInfo) {
 	for {
 		if len(discovery.PeerList) == 0 {
 			continue
 		}
 		//Latency will after calculated in millis
+
+		fmt.Println("sending time")
 
 		now := time.Now()
 
@@ -40,9 +43,8 @@ func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer variable
 // SendCpuInformation function will send information about the CPU
 func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *variables.Cpu) {
 	for {
-		if len(discovery.PeerList) == 0 {
-			continue
-		}
+
+		fmt.Println("sending cpu")
 
 		//Update every 10s CPU Usages in %
 		updateCpuPercentage(cpu)
@@ -65,9 +67,8 @@ func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *varia
 func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *variables.Ram) {
 
 	for {
-		if len(discovery.PeerList) == 0 {
-			continue
-		}
+
+		fmt.Println("sending ram")
 
 		//Update every 10s RAM usages in %
 		updateRamPercentage(ram)

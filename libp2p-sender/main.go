@@ -87,7 +87,7 @@ func main() {
 		log.Println("Subscribed to, " + subscribe2.Topic())
 	}
 
-	peer_lat := variables.PeerInfo{Id: node.ID().Pretty(), Ip: GetLocalIP()}
+	peer_lat := variables.NewPeerInfo(GetLocalIP(), node.ID().Pretty())
 	peer_cpu := variables.NewCpu(GetLocalIP(), node.ID().Pretty())
 	peer_ram := variables.NewRam(GetLocalIP(), node.ID().Pretty())
 
