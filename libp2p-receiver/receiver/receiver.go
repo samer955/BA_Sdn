@@ -3,6 +3,8 @@ package receiver
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/beevik/ntp"
 	host2 "github.com/libp2p/go-libp2p-core/host"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"libp2p-receiver/database"
@@ -30,7 +32,12 @@ func ReadTimeMessages(subscribe *pubsub.Subscription, context context.Context, n
 				//Latency is calculated from the time when the peer send the message
 				//and when the receiver reads it (in millis)
 
-				latency := time.Since(peer.Time).Milliseconds()
+				now, err := ntp.Time("time.apple.com")
+				if err != nil {
+					fmt.Println(err)
+				}
+
+				latency := now.UnixMilli() - peer.Time.UnixMilli()
 
 				log.Println("latency :", latency)
 

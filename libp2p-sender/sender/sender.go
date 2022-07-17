@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/beevik/ntp"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -22,7 +23,10 @@ func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer *variabl
 
 		fmt.Println("sending time")
 
-		now := time.Now()
+		now, err := ntp.Time("time.apple.com")
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		peer.Time = now
 
@@ -89,11 +93,23 @@ func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *varia
 func updateRamPercentage(ram *variables.Ram) {
 	vmStat, _ := mem.VirtualMemory()
 	ram.Usage = int(vmStat.UsedPercent)
-	ram.Time = time.Now()
+
+	now, err := ntp.Time("time.apple.com")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	ram.Time = now
 }
 
 func updateCpuPercentage(c *variables.Cpu) {
 	cpuUsage, _ := cpu.Percent(0, false)
 	c.Usage = int(cpuUsage[0])
-	c.Time = time.Now()
+
+	now, err := ntp.Time("time.apple.com")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	c.Time = now
 }
