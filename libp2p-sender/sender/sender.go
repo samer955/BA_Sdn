@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/beevik/ntp"
+	host2 "github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -15,6 +17,7 @@ import (
 )
 
 func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer *variables.PeerInfo) {
+
 	for {
 		if len(discovery.PeerList) == 0 {
 			continue
@@ -23,12 +26,7 @@ func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer *variabl
 
 		fmt.Println("sending time")
 
-		now, err := ntp.Time("time.apple.com")
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		peer.Time = now
+		peer.Time = TimeFromServer()
 
 		//JSON encoding of peerInfo struct in order to send the data as []byte.
 		peerInfoJson, _ := json.Marshal(peer)
@@ -90,26 +88,53 @@ func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *varia
 	}
 }
 
+func SendPingInformation(topic *pubsub.Topic, context context.Context, node host2.Host) {
+
+	for {
+		peerPing := peer.AddrInfo{
+			ID:    node.ID(),
+			Addrs: node.Addrs(),
+		}
+
+		addrs, err := peer.AddrInfoToP2pAddrs(&peerPing)
+		if err != nil {
+			panic(err)
+		}
+
+		jsonPing, err := json.Marshal(addrs[0])
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		content := topic.Publish(context, jsonPing)
+
+		if content != nil {
+			log.Println("Error publishing content ", content.Error())
+		}
+
+		fmt.Println("sended " + addrs[0].String())
+		time.Sleep(10 * time.Second)
+	}
+
+}
+
 func updateRamPercentage(ram *variables.Ram) {
 	vmStat, _ := mem.VirtualMemory()
 	ram.Usage = int(vmStat.UsedPercent)
-
-	now, err := ntp.Time("time.apple.com")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	ram.Time = now
+	ram.Time = TimeFromServer()
 }
 
 func updateCpuPercentage(c *variables.Cpu) {
 	cpuUsage, _ := cpu.Percent(0, false)
 	c.Usage = int(cpuUsage[0])
+	c.Time = TimeFromServer()
+}
 
+//This Function get the actual time from a server
+func TimeFromServer() time.Time {
 	now, err := ntp.Time("time.apple.com")
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	c.Time = now
+	return now
 }

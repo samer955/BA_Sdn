@@ -8,7 +8,6 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"libp2p-sender/discovery"
 	"libp2p-sender/sender"
-	"libp2p-sender/variables"
 	"log"
 	"net"
 	"os"
@@ -24,6 +23,7 @@ func main() {
 	const roomTime = "latency"
 	const roomCpu = "cpu"
 	const roomRam = "ram"
+	const roomPing = "ping"
 
 	context := context.Background()
 
@@ -87,16 +87,35 @@ func main() {
 		log.Println("Subscribed to, " + subscribe2.Topic())
 	}
 
-	peer_lat := variables.NewPeerInfo(GetLocalIP(), node.ID().Pretty())
-	peer_cpu := variables.NewCpu(GetLocalIP(), node.ID().Pretty())
-	peer_ram := variables.NewRam(GetLocalIP(), node.ID().Pretty())
+	pingTopic, err := ps.Join(roomPing)
+
+	if err != nil {
+		log.Println("Error while subscribing in the RAM-Topic")
+	} else {
+		log.Println("Subscribed on", roomPing)
+		log.Println("topicID", pingTopic.String())
+	}
+
+	subscribePing, err := pingTopic.Subscribe()
+
+	if (err) != nil {
+		log.Println("cannot subscribe to: ", timeTopic.String())
+	} else {
+		log.Println("Subscribed to, " + subscribePing.Topic())
+	}
+
+	go sender.SendPingInformation(pingTopic, context, node)
+
+	//	peer_lat := variables.NewPeerInfo(GetLocalIP(), node.ID().Pretty())
+	//	peer_cpu := variables.NewCpu(GetLocalIP(), node.ID().Pretty())
+	//	peer_ram := variables.NewRam(GetLocalIP(), node.ID().Pretty())
 
 	//send timestamp on a separated thread
-	go sender.SendTimeMessage(timeTopic, context, peer_lat)
-	//send CPU information on a separated thread
-	go sender.SendCpuInformation(cpuTopic, context, peer_cpu)
-	//send RAM information on a separated thread
-	go sender.SendRamInformation(ramTopic, context, peer_ram)
+	//	go sender.SendTimeMessage(timeTopic, context, peer_lat)
+	//	//send CPU information on a separated thread
+	//	go sender.SendCpuInformation(cpuTopic, context, peer_cpu)
+	//	//send RAM information on a separated thread
+	//	go sender.SendRamInformation(ramTopic, context, peer_ram)
 
 	//Run the program till its stopped
 	ch := make(chan os.Signal, 1)

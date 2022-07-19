@@ -16,7 +16,7 @@ services:
 
 
   grafana:
-    image: grafana/grafana-enterprise:8.2.0
+    image: grafana/grafana-enterprise
     restart: unless-stopped
     ports:
       - '3000:3000'
