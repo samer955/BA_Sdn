@@ -135,20 +135,9 @@ type discoveryNotifee struct {
 func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 	fmt.Printf("discovered a new peer %s\n", info.ID.Pretty())
 
-	//call the functio to print the info of the peer
-
 	if d.node.ID().Pretty() != info.ID.Pretty() {
 		d.node.Connect(context.Background(), info)
 		PeerList = append(PeerList, info)
-
-		//to delete
-		fmt.Println("########")
-
-		for _, peer := range PeerList {
-			fmt.Println(peer.Addrs[0].String() + "/" + peer.ID.Pretty())
-		}
-
-		fmt.Println("########")
 
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
 	}

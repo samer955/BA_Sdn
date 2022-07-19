@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/beevik/ntp"
-	host2 "github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -86,36 +84,6 @@ func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *varia
 
 		time.Sleep(15 * time.Second)
 	}
-}
-
-func SendPingInformation(topic *pubsub.Topic, context context.Context, node host2.Host) {
-
-	for {
-		peerPing := peer.AddrInfo{
-			ID:    node.ID(),
-			Addrs: node.Addrs(),
-		}
-
-		addrs, err := peer.AddrInfoToP2pAddrs(&peerPing)
-		if err != nil {
-			panic(err)
-		}
-
-		jsonPing, err := json.Marshal(addrs[0])
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		content := topic.Publish(context, jsonPing)
-
-		if content != nil {
-			log.Println("Error publishing content ", content.Error())
-		}
-
-		fmt.Println("sended " + addrs[0].String())
-		time.Sleep(10 * time.Second)
-	}
-
 }
 
 func updateRamPercentage(ram *variables.Ram) {
