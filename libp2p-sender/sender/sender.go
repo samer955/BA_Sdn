@@ -20,7 +20,6 @@ func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer *variabl
 		if len(discovery.PeerList) == 0 {
 			continue
 		}
-		//Latency will after calculated in millis
 
 		fmt.Println("sending time")
 
@@ -36,14 +35,16 @@ func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer *variabl
 			log.Println("Error publishing content ", content.Error())
 		}
 		//wait 10 seconds before send another timestamp
-		time.Sleep(15 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 
 // SendCpuInformation function will send information about the CPU
 func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *variables.Cpu) {
 	for {
-
+		if len(discovery.PeerList) == 0 {
+			continue
+		}
 		fmt.Println("sending cpu")
 
 		//Update every 10s CPU Usages in %
@@ -59,7 +60,7 @@ func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *varia
 			log.Println("Error publishing content ", content.Error())
 		}
 
-		time.Sleep(15 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 
@@ -67,6 +68,9 @@ func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *varia
 func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *variables.Ram) {
 
 	for {
+		if len(discovery.PeerList) == 0 {
+			continue
+		}
 
 		fmt.Println("sending ram")
 
@@ -82,7 +86,7 @@ func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *varia
 			log.Println("Error publishing content ", content.Error())
 		}
 
-		time.Sleep(15 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 

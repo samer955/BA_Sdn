@@ -98,6 +98,8 @@ func main() {
 	//send RAM information on a separated thread
 	go sender.SendRamInformation(ramTopic, context, peer_ram)
 
+	//go ReadTimeMessages(subscribe, context, node)
+
 	//Run the program till its stopped
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)

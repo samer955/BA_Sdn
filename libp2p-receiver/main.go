@@ -29,7 +29,6 @@ func main() {
 	const roomTime = "latency"
 	const roomCpu = "cpu"
 	const roomRam = "ram"
-	const roomPing = "ping"
 
 	context := context.Background()
 
@@ -95,31 +94,12 @@ func main() {
 		log.Println("cannot subscribe to: ", ramTopic.String())
 	}
 
-	pingTopic, err := ps.Join(roomPing)
-
-	if err != nil {
-		log.Println("Error while subscribing in the RAM-Topic")
-	} else {
-		log.Println("Subscribed on", roomPing)
-		log.Println("topicID", pingTopic.String())
-	}
-
-	subscribePing, err := pingTopic.Subscribe()
-
-	if (err) != nil {
-		log.Println("cannot subscribe to: ", pingTopic.String())
-	} else {
-		log.Println("Subscribed to, " + subscribePing.Topic())
-	}
-
 	//read timestamp of peers in a separated thread
 	go receiver.ReadTimeMessages(subscribe, context, node)
 	//read cpu information of peers in a separated thread
 	go receiver.ReadCpuInformation(subscribe2, context, node)
 	//read ram information of peers in a separated thread
 	go receiver.ReadRamInformation(subscribe3, context, node)
-
-	go receiver.ReadPingMessage(subscribePing, context, node, pingService)
 
 	//Run the program till its stopped
 	ch := make(chan os.Signal, 1)
