@@ -113,6 +113,24 @@ func ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context, nod
 					log.Fatal(err)
 				}
 
+				if len(cpu.Processes) != 0 {
+					for _, proc := range cpu.Processes {
+
+						_, err = db.Exec("INSERT INTO process(name,cpu,hostname,ip,time)"+
+							" VALUES($1,$2,$3,$4,$5)",
+							proc.Name,
+							proc.Cpu_percent,
+							cpu.Hostname,
+							cpu.Ip,
+							cpu.Time)
+
+						if err != nil {
+							log.Fatal(err)
+						}
+
+					}
+				}
+
 				log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 			}
 		}

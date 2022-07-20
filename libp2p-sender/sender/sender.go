@@ -8,9 +8,11 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/shirou/gopsutil/v3/process"
 	"libp2p-sender/discovery"
 	"libp2p-sender/variables"
 	"log"
+	"math"
 	"time"
 )
 
@@ -50,6 +52,10 @@ func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *varia
 		//Update every 10s CPU Usages in %
 		updateCpuPercentage(cpu)
 
+		if cpu.Usage >= 80 {
+			cpu.Processes = getProcessesCPU()
+		}
+
 		//JSON encoding of cpu in order to send the data as []byte.
 		jsonCpu, _ := json.Marshal(cpu)
 
@@ -60,7 +66,8 @@ func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *varia
 			log.Println("Error publishing content ", content.Error())
 		}
 
-		time.Sleep(5 * time.Second)
+		cpu.Processes = nil
+		time.Sleep(15 * time.Second)
 	}
 }
 
@@ -109,4 +116,40 @@ func TimeFromServer() time.Time {
 		fmt.Println(err)
 	}
 	return now
+}
+
+func getProcessesCPU() []variables.Process {
+
+	var processList []variables.Process
+
+	//get the actual processes running
+	processes, err := process.Processes()
+
+	if err != nil {
+		fmt.Println("Unable to read processes")
+		return nil
+	}
+
+	for _, proc := range processes {
+		validateProcess(proc, &processList)
+	}
+	return processList
+}
+
+//validate a process: proof if the name is visible and the cpu % usage of it is more than 4%
+func validateProcess(process *process.Process, list *[]variables.Process) {
+
+	name, err := process.Name()
+	if err == nil {
+		perc, err := process.CPUPercent()
+		if err == nil {
+			if perc >= 4.0 {
+				pro := variables.Process{
+					Name:        name,
+					Cpu_percent: math.Round(perc*100) / 100}
+
+				*list = append(*list, pro)
+			}
+		}
+	}
 }
