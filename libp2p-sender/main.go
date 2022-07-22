@@ -87,18 +87,18 @@ func main() {
 		log.Println("Subscribed to, " + subscribe2.Topic())
 	}
 
-	//	peer_lat := variables.NewPeerInfo(GetLocalIP(), node.ID().Pretty())
+	peer_lat := variables.NewPeerInfo(GetLocalIP(), node.ID().Pretty())
 	peer_cpu := variables.NewCpu(GetLocalIP(), node.ID().Pretty())
-	//	peer_ram := variables.NewRam(GetLocalIP(), node.ID().Pretty())
+	peer_ram := variables.NewRam(GetLocalIP(), node.ID().Pretty())
 
 	//send timestamp on a separated thread
-	//	go sender.SendTimeMessage(timeTopic, context, peer_lat)
+	go sender.SendTimeMessage(timeTopic, context, peer_lat)
 	//send CPU information on a separated thread
 	go sender.SendCpuInformation(cpuTopic, context, peer_cpu)
 	//send RAM information on a separated thread
-	//	go sender.SendRamInformation(ramTopic, context, peer_ram)
+	go sender.SendRamInformation(ramTopic, context, peer_ram)
 
-	//Run the program till its stopped
+	//Run the program till its stopped (forced)
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
