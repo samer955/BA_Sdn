@@ -115,7 +115,8 @@ func SendPing(ctx context.Context, node host2.Host, peer peer.AddrInfo, topic *p
 		}
 		status.Time = TimeFromServer()
 
-		//sendToDatabase(status)
+		//publish the status of the Ping in the topic
+		publish(status, ctx, topic)
 
 		//Next Ping in 1 Min
 		time.Sleep(10 * time.Second)
@@ -178,10 +179,6 @@ func validateProcess(process *process.Process, list *[]variables.Process) {
 			}
 		}
 	}
-}
-
-func sendToDatabase(status variables.PingStatus, context context.Context, topic *pubsub.Topic) {
-
 }
 
 func publish(object interface{}, context context.Context, topic *pubsub.Topic) error {

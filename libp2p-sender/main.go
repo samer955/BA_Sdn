@@ -19,6 +19,10 @@ import (
 	"syscall"
 )
 
+type discoveryNotifee struct {
+	node host.Host
+}
+
 const discoveryName = "discoveryRoom"
 
 var PeerList []peer.AddrInfo
@@ -39,11 +43,6 @@ func main() {
 		panic(err)
 	}
 
-	// setup local mDNS discovery
-	if err := setupDiscovery(node); err != nil {
-		panic(err)
-	}
-
 	//return a new pubsub Service using the GossipSub router
 	_ = subscriber.NewPubSubService(context, node)
 
@@ -58,6 +57,11 @@ func main() {
 
 	ramTopic := subscriber.JoinTopic(roomRam)
 	_ = subscriber.Subscribe(ramTopic)
+
+	// setup local mDNS discovery
+	if err := setupDiscovery(node); err != nil {
+		panic(err)
+	}
 
 	peer_lat := variables.NewPeerInfo(GetLocalIP(), node.ID().Pretty())
 	peer_cpu := variables.NewCpu(GetLocalIP(), node.ID().Pretty())
@@ -92,10 +96,6 @@ func GetLocalIP() string {
 	}
 
 	return ""
-}
-
-type discoveryNotifee struct {
-	node host.Host
 }
 
 func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {

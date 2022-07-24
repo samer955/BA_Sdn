@@ -137,6 +137,27 @@ func ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context, nod
 	}
 }
 
+func ReadPingStatus(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
+
+	for {
+		message, err := subscribe.Next(ctx)
+		if err != nil {
+			log.Println("cannot read from topic")
+		} else {
+			if message.ReceivedFrom.String() != node.ID().Pretty() {
+
+				status := new(variables.PingStatus)
+				//parse the JSON-encoded data and store the result into cpu
+				json.Unmarshal(message.Data, status)
+
+				savePingStatus(*status)
+				log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
+			}
+		}
+
+	}
+}
+
 // SendPing In order to see if a Peer is alive or not, send a Ping and get an RTT response,
 //If the ping return an error, we cannot reach it.
 func SendPing(ctx context.Context, node host2.Host, peer peer.AddrInfo) {
