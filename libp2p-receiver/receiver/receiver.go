@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"github.com/beevik/ntp"
 	host2 "github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	"libp2p-receiver/database"
 	"libp2p-receiver/variables"
 	"log"
+	"time"
 )
 
 var db = database.Database()
@@ -29,10 +32,7 @@ func ReadTimeMessages(subscribe *pubsub.Subscription, context context.Context, n
 				json.Unmarshal(message.Data, peer)
 
 				//Get the actual time from a Server
-				now, err := ntp.Time("time.apple.com")
-				if err != nil {
-					fmt.Println(err)
-				}
+				now := TimeFromServer()
 
 				//Latency is calculated from the time when the peer send the message
 				//and when the receiver reads it (in millis)
@@ -135,6 +135,62 @@ func ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context, nod
 			}
 		}
 	}
+}
+
+// SendPing In order to see if a Peer is alive or not, send a Ping and get an RTT response,
+//If the ping return an error, we cannot reach it.
+func SendPing(ctx context.Context, node host2.Host, peer peer.AddrInfo) {
+
+	status := variables.PingStatus{
+		Source_node: node.ID().Pretty(),
+		Target_node: peer.ID.Pretty(),
+	}
+	//The Ping function return a channel that still open till the context is alive
+	ch := ping.Ping(ctx, node, peer.ID)
+
+	for {
+		res := <-ch
+
+		if res.Error == nil {
+			status.Alive = true
+			status.RTT = res.RTT.Milliseconds()
+			fmt.Println("pinged", peer.Addrs[0], "in", res.RTT)
+		} else {
+			status.Alive = false
+			status.RTT = 0
+			fmt.Println("pinged", peer.Addrs[0], "without success")
+			return
+		}
+		status.Time = TimeFromServer()
+		savePingStatus(status)
+
+		//Next Ping in 1 Min
+		time.Sleep(10 * time.Second)
+	}
+}
+
+func savePingStatus(status variables.PingStatus) {
+
+	_, err := db.Exec("INSERT INTO status(source_id,target_id,is_alive,rtt,time)"+
+		" VALUES($1,$2,$3,$4,$5)",
+		status.Source_node,
+		status.Target_node,
+		status.Alive,
+		status.RTT,
+		status.Time,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func TimeFromServer() time.Time {
+	now, err := ntp.Time("time.apple.com")
+	if err != nil {
+		fmt.Println(err)
+	}
+	return now
 }
 
 func latencyCalculate(actual, source int64) int64 {

@@ -10,7 +10,9 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
-	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
+	tls "github.com/libp2p/go-libp2p/p2p/security/tls"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
+	"github.com/libp2p/go-libp2p/p2p/transport/websocket"
 	"libp2p-receiver/receiver"
 	"log"
 	"os"
@@ -32,14 +34,23 @@ func main() {
 
 	context := context.Background()
 
+	transports := libp2p.ChainOptions(
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.Transport(websocket.New),
+	)
+
+	security := libp2p.Security(tls.ID, tls.New)
+
+	listenAddrs := libp2p.ListenAddrStrings(
+		"/ip4/0.0.0.0/tcp/0",
+		"/ip4/0.0.0.0/tcp/0/ws",
+	)
+
 	// create a new libp2p Host that listens on a random TCP port
-	node, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"), libp2p.Ping(false))
+	node, err := libp2p.New(transports, listenAddrs, security, libp2p.Ping(false))
 	if err != nil {
 		panic(err)
 	}
-
-	pingService := &ping.PingService{Host: node}
-	node.SetStreamHandler(ping.ID, pingService.PingHandler)
 
 	//create a new pubsub Service using the GossipSub router
 	ps, err := pubsub.NewGossipSub(context, node)
@@ -83,12 +94,10 @@ func main() {
 	if (err) != nil {
 		log.Println("cannot subscribe to: ", timeTopic.String())
 	}
-
 	subscribe2, err := cpuTopic.Subscribe()
 	if (err) != nil {
 		log.Println("cannot subscribe to: ", cpuTopic.String())
 	}
-
 	subscribe3, err := ramTopic.Subscribe()
 	if (err) != nil {
 		log.Println("cannot subscribe to: ", ramTopic.String())
@@ -120,6 +129,7 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 		PeerList = append(PeerList, info)
 
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
+		go receiver.SendPing(context.Background(), d.node, info)
 	}
 }
 

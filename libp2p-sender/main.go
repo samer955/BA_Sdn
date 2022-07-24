@@ -5,22 +5,28 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"libp2p-sender/discovery"
+	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	"libp2p-sender/sender"
+	"libp2p-sender/subscriber"
 	"libp2p-sender/variables"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
-const discoveryInterval = time.Minute
+const discoveryName = "discoveryRoom"
+
+var PeerList []peer.AddrInfo
+var PingTopic *pubsub.Topic
 
 func main() {
 
+	const roomPing = "ping"
 	const roomTime = "latency"
 	const roomCpu = "cpu"
 	const roomRam = "ram"
@@ -34,69 +40,35 @@ func main() {
 	}
 
 	// setup local mDNS discovery
-	if err := discovery.SetupDiscovery(node); err != nil {
+	if err := setupDiscovery(node); err != nil {
 		panic(err)
 	}
 
-	//create a new pubsub Service using the GossipSub router
-	ps, err := pubsub.NewGossipSub(context, node)
-	if err != nil {
-		panic(err)
-	}
+	//return a new pubsub Service using the GossipSub router
+	_ = subscriber.NewPubSubService(context, node)
 
-	timeTopic, err := ps.Join(roomTime)
+	PingTopic = subscriber.JoinTopic(roomPing)
+	_ = subscriber.Subscribe(PingTopic)
 
-	if err != nil {
-		log.Println("Error while subscribing in the Time-Topic")
-	} else {
-		log.Println("Subscribed on", roomTime)
-		log.Println("topicID", timeTopic.String())
-	}
+	timeTopic := subscriber.JoinTopic(roomTime)
+	_ = subscriber.Subscribe(timeTopic)
 
-	cpuTopic, err := ps.Join(roomCpu)
+	cpuTopic := subscriber.JoinTopic(roomCpu)
+	_ = subscriber.Subscribe(cpuTopic)
 
-	if err != nil {
-		log.Println("Error while subscribing in the CPU-Topic")
-	} else {
-		log.Println("Subscribed on", roomCpu)
-		log.Println("topicID", cpuTopic.String())
-	}
-
-	ramTopic, err := ps.Join(roomRam)
-
-	if err != nil {
-		log.Println("Error while subscribing in the RAM-Topic")
-	} else {
-		log.Println("Subscribed on", roomRam)
-		log.Println("topicID", ramTopic.String())
-	}
-
-	subscribe, err := timeTopic.Subscribe()
-
-	if (err) != nil {
-		log.Println("cannot subscribe to: ", timeTopic.String())
-	} else {
-		log.Println("Subscribed to, " + subscribe.Topic())
-	}
-
-	subscribe2, err := cpuTopic.Subscribe()
-
-	if (err) != nil {
-		log.Println("cannot subscribe to: ", cpuTopic.String())
-	} else {
-		log.Println("Subscribed to, " + subscribe2.Topic())
-	}
+	ramTopic := subscriber.JoinTopic(roomRam)
+	_ = subscriber.Subscribe(ramTopic)
 
 	peer_lat := variables.NewPeerInfo(GetLocalIP(), node.ID().Pretty())
 	peer_cpu := variables.NewCpu(GetLocalIP(), node.ID().Pretty())
 	peer_ram := variables.NewRam(GetLocalIP(), node.ID().Pretty())
 
 	//send timestamp on a separated thread
-	go sender.SendTimeMessage(timeTopic, context, peer_lat)
+	go sender.SendTimeMessage(timeTopic, context, peer_lat, PeerList)
 	//send CPU information on a separated thread
-	go sender.SendCpuInformation(cpuTopic, context, peer_cpu)
+	go sender.SendCpuInformation(cpuTopic, context, peer_cpu, PeerList)
 	//send RAM information on a separated thread
-	go sender.SendRamInformation(ramTopic, context, peer_ram)
+	go sender.SendRamInformation(ramTopic, context, peer_ram, PeerList)
 
 	//Run the program till its stopped (forced)
 	ch := make(chan os.Signal, 1)
@@ -120,4 +92,25 @@ func GetLocalIP() string {
 	}
 
 	return ""
+}
+
+type discoveryNotifee struct {
+	node host.Host
+}
+
+func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
+	fmt.Printf("discovered a new peer %s\n", info.ID.Pretty())
+
+	if d.node.ID().Pretty() != info.ID.Pretty() {
+		d.node.Connect(context.Background(), info)
+		PeerList = append(PeerList, info)
+
+		log.Printf("connected to Peer %s ", info.ID.Pretty())
+		sender.SendPing(context.Background(), d.node, info, PingTopic)
+	}
+}
+
+func setupDiscovery(node host.Host) error {
+	discovery := mdns.NewMdnsService(node, discoveryName, &discoveryNotifee{node: node})
+	return discovery.Start()
 }

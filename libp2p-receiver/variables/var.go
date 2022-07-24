@@ -30,3 +30,11 @@ type Ram struct {
 	Usage    int       `json:"usage, omitempty"`
 	Time     time.Time `json:"time, omitempty"`
 }
+
+type PingStatus struct {
+	Source_node string    `json:"from"`
+	Target_node string    `json:"target"`
+	Alive       bool      `json:"alive"`
+	RTT         int64     `json:"rtt"`
+	Time        time.Time `json:"time"`
+}
