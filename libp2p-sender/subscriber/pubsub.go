@@ -34,7 +34,7 @@ func JoinTopic(room string) *pubsub.Topic {
 		log.Println("Subscribed on", room)
 		log.Println("topicID", topic.String())
 	}
-	//save topic on a map
+	//insert topic in the map
 	topics[room] = topic
 	return topic
 }

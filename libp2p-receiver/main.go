@@ -7,6 +7,7 @@ import (
 	"github.com/libp2p/go-libp2p"
 	_ "github.com/libp2p/go-libp2p-core/host"
 	host2 "github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
@@ -16,6 +17,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 const discoveryName = "discoveryRoom"
@@ -32,13 +34,16 @@ func main() {
 
 	context := context.Background()
 
+	//counter := new(metrics.BandwidthCounter)
+	//opt := libp2p.BandwidthReporter(counter)
+
 	// create a new libp2p Host that listens on a random TCP port
 	node, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
 	if err != nil {
 		panic(err)
 	}
 
-	//return a new pubsub Service using the GossipSub router
+	//return a new Pubsub Service using the GossipSub router
 	_ = subscriber.NewPubSubService(context, node)
 
 	PingTopic = subscriber.JoinTopic(roomPing)
@@ -58,7 +63,7 @@ func main() {
 		panic(err)
 	}
 
-	//read timestamp of peers in a separated thread
+	//read Timestamp of peers in a separated thread
 	go receiver.ReadTimeMessages(timeSubscribe, context, node)
 	//read cpu information of peers in a separated thread
 	go receiver.ReadCpuInformation(cpuSubscribe, context, node)
@@ -66,6 +71,8 @@ func main() {
 	go receiver.ReadRamInformation(ramSubscribe, context, node)
 	//read all the Ping Status from the other Peers
 	go receiver.ReadPingStatus(pingSubscribe, context, node)
+
+	//	go readBandwidth(counter, node)
 
 	//Run the program till its stopped
 	ch := make(chan os.Signal, 1)
@@ -86,11 +93,21 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 		PeerList = append(PeerList, info)
 
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
-		go receiver.SendPing(context.Background(), d.node, info)
+		//go receiver.SendPing(context.Background(), d.node, info)
 	}
 }
 
 func setupDiscovery(node host2.Host) error {
 	discovery := mdns.NewMdnsService(node, discoveryName, &discoveryNotifee{node: node})
 	return discovery.Start()
+}
+
+func readBandwidth(counter *metrics.BandwidthCounter, node host2.Host) {
+
+	for {
+		var stat = counter.GetBandwidthForPeer(node.ID())
+		fmt.Println(stat)
+		time.Sleep(10 * time.Second)
+	}
+
 }

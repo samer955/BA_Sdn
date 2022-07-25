@@ -19,10 +19,10 @@ import (
 
 //SendTimeMessage will send periodically a timestamp in order to calculate the latency in ms
 //between sender and receiver
-func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer *variables.PeerInfo, peers []peer.AddrInfo) {
+func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer *variables.PeerInfo, list *[]peer.AddrInfo) {
 
 	for {
-		if len(peers) == 0 {
+		if len(*list) == 0 {
 			continue
 		}
 
@@ -42,9 +42,9 @@ func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer *variabl
 }
 
 // SendCpuInformation function will send periodically information about the CPU
-func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *variables.Cpu, peers []peer.AddrInfo) {
+func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *variables.Cpu, peers *[]peer.AddrInfo) {
 	for {
-		if len(peers) == 0 {
+		if len(*peers) == 0 {
 			continue
 		}
 		fmt.Println("sending cpu")
@@ -70,10 +70,10 @@ func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *varia
 }
 
 // SendRamInformation function will send periodically information about the RAM
-func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *variables.Ram, peers []peer.AddrInfo) {
+func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *variables.Ram, peers *[]peer.AddrInfo) {
 
 	for {
-		if len(peers) == 0 {
+		if len(*peers) == 0 {
 			continue
 		}
 
