@@ -63,16 +63,18 @@ func main() {
 		panic(err)
 	}
 
-	peer_lat := variables.NewPeerInfo(GetLocalIP(), node.ID().Pretty())
-	peer_cpu := variables.NewCpu(GetLocalIP(), node.ID().Pretty())
-	peer_ram := variables.NewRam(GetLocalIP(), node.ID().Pretty())
+	fmt.Println(GetLocalIP())
 
-	//send timestamp on a separated thread
+	peer_lat := variables.NewPeerInfo(GetLocalIP(), node.ID().Pretty())
+	//	peer_cpu := variables.NewCpu(GetLocalIP(), node.ID().Pretty())
+	//	peer_ram := variables.NewRam(GetLocalIP(), node.ID().Pretty())
+	//
+	//	//send timestamp on a separated thread
 	go sender.SendTimeMessage(timeTopic, context, peer_lat, &PeerList)
-	//send CPU information on a separated thread
-	go sender.SendCpuInformation(cpuTopic, context, peer_cpu, &PeerList)
-	//send RAM information on a separated thread
-	go sender.SendRamInformation(ramTopic, context, peer_ram, &PeerList)
+	//	//send CPU information on a separated thread
+	//	go sender.SendCpuInformation(cpuTopic, context, peer_cpu, &PeerList)
+	//	//send RAM information on a separated thread
+	//	go sender.SendRamInformation(ramTopic, context, peer_ram, &PeerList)
 
 	//Run the program till its stopped (forced)
 	ch := make(chan os.Signal, 1)
@@ -104,7 +106,6 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 	if d.node.ID().Pretty() != info.ID.Pretty() {
 		d.node.Connect(context.Background(), info)
 		PeerList = append(PeerList, info)
-		fmt.Println(len(PeerList))
 
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
 		sender.SendPing(context.Background(), d.node, info, PingTopic)

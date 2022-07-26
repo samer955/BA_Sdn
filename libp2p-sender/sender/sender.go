@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/beevik/ntp"
+	"github.com/google/uuid"
 	host2 "github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -30,14 +31,15 @@ func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer *variabl
 
 		//Set the time when the message is sent
 		peer.Time = TimeFromServer()
+		peer.UUID = uuid.New().String()
 
 		err := publish(peer, context, topic)
 		if err != nil {
 			fmt.Println("Error publishing content ", err.Error())
 		}
 
-		//wait 10 seconds before send another timestamp
-		time.Sleep(5 * time.Second)
+		//wait 20 seconds before send another timestamp
+		time.Sleep(20 * time.Second)
 	}
 }
 
@@ -49,6 +51,7 @@ func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *varia
 		}
 		fmt.Println("sending cpu")
 
+		cpu.UUID = uuid.New().String()
 		//Update every 10s CPU Usages in %
 		updateCpuPercentage(cpu)
 
@@ -69,16 +72,15 @@ func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *varia
 	}
 }
 
-// SendRamInformation function will send periodically information about the RAM
+// SendRamInformation function will send periodically information about the actual RAM Percentage
 func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *variables.Ram, peers *[]peer.AddrInfo) {
-
 	for {
 		if len(*peers) == 0 {
 			continue
 		}
-
 		fmt.Println("sending ram")
 
+		ram.UUID = uuid.New().String()
 		//Update every 10s RAM usages in %
 		updateRamPercentage(ram)
 
@@ -87,16 +89,20 @@ func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *varia
 		if err != nil {
 			fmt.Println("Error publishing content ", err.Error())
 		}
-
 		time.Sleep(5 * time.Second)
 	}
 }
 
+//SendPing function send a Ping every 60s to the discovered Peer
+//This function is used in order to reach the others nodes in an active way getting
+//a bool if the ping was successfully (true if a node is reachable, false if not) and an RTT in ms
 func SendPing(ctx context.Context, node host2.Host, peer peer.AddrInfo, topic *pubsub.Topic) {
 
+	var multiaddr = node.Addrs()
+
 	status := variables.PingStatus{
-		Source_node: node.ID().Pretty(),
-		Target_node: peer.ID.Pretty(),
+		Source: multiaddr[0].String(),
+		Target: peer.Addrs[6].String(),
 	}
 	//The Ping function return a channel that still open till the context is alive
 	ch := ping.Ping(ctx, node, peer.ID)
@@ -114,25 +120,37 @@ func SendPing(ctx context.Context, node host2.Host, peer peer.AddrInfo, topic *p
 			fmt.Println("pinged", peer.Addrs[0], "without success")
 		}
 		status.Time = TimeFromServer()
+		status.UUID = uuid.New().String()
 
 		//publish the status of the Ping in the topic
 		publish(status, ctx, topic)
 
 		//Next Ping in 1 Min
-		time.Sleep(10 * time.Second)
+		time.Sleep(60 * time.Second)
 	}
 }
 
 func updateRamPercentage(ram *variables.Ram) {
-	vmStat, _ := mem.VirtualMemory()
-	ram.Usage = int(vmStat.UsedPercent)
 	ram.Time = TimeFromServer()
+	vmStat, err := mem.VirtualMemory()
+	if err != nil {
+		fmt.Println("Unable to get Memory Info")
+		ram.Usage = 00
+		return
+	}
+	ram.Usage = int(vmStat.UsedPercent)
 }
 
 func updateCpuPercentage(c *variables.Cpu) {
-	cpuUsage, _ := cpu.Percent(0, false)
-	c.Usage = int(cpuUsage[0])
 	c.Time = TimeFromServer()
+	cpuUsage, err := cpu.Percent(0, false)
+	if err != nil {
+		fmt.Println("Unable to get Cpu Percentage")
+		c.Usage = 00
+		return
+	}
+	c.Usage = int(cpuUsage[0])
+
 }
 
 //TimeFromServer get the actual time from a remote server using the ntp Protocol
