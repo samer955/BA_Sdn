@@ -7,15 +7,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/beevik/ntp"
+	"github.com/google/uuid"
 	host2 "github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/metrics"
+	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"log"
 	"time"
 )
 
 var db = database.Database()
+var nodeIpMap = make(map[string]string)
 
-func ReadTimeMessages(subscribe *pubsub.Subscription, context context.Context, node host2.Host) {
+func ReadSystemInfo(subscribe *pubsub.Subscription, context context.Context, node host2.Host) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -24,14 +28,17 @@ func ReadTimeMessages(subscribe *pubsub.Subscription, context context.Context, n
 				log.Println("cannot read from topic")
 			} else {
 				if message.ReceivedFrom.String() != node.ID().Pretty() {
-					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
 					peer := new(variables.PeerInfo)
 
 					//Unmarshal the file into the peer struct
 					json.Unmarshal(message.Data, peer)
 
-					//Get the actual time from a Server
+					nodeIpMap[peer.Id] = peer.Ip
+
+					fmt.Println(nodeIpMap)
+
+					//Get the actual time from a remote Server
 					now := TimeFromServer()
 
 					//Latency is calculated from the time when the peer send the message
@@ -40,9 +47,10 @@ func ReadTimeMessages(subscribe *pubsub.Subscription, context context.Context, n
 
 					log.Println("latency :", latency)
 
-					//Here we store latency of the peer in the database as well as node_id, ip_address
-					//in order to identify it
-					saveTimeMessage(peer, now, latency)
+					//Here we store latency of the peer in the database as well as system information
+					saveSystemMessage(peer, now, latency)
+
+					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
 			}
 		}()
@@ -64,17 +72,7 @@ func ReadRamInformation(subscribe *pubsub.Subscription, ctx context.Context, nod
 
 				//Here we store cpu usage percentage of the peer in the database as well
 				//as node_id, ip_address to identify the peer
-				_, err = db.Exec("INSERT INTO ram(hostname,node_id,ip,usage,time)"+
-					" VALUES($1,$2,$3,$4,$5)",
-					ram.Hostname,
-					ram.Id,
-					ram.Ip,
-					ram.Usage,
-					ram.Time)
-
-				if err != nil {
-					log.Fatal(err)
-				}
+				saveRamInfo(ram)
 
 				log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 			}
@@ -97,35 +95,7 @@ func ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context, nod
 
 				//Here we store cpu usage percentage of the peer in the database as well
 				//as node_id, ip_address to identify the peer
-				_, err = db.Exec("INSERT INTO cpu(hostname,node_id,ip,usage,time)"+
-					" VALUES($1,$2,$3,$4,$5)",
-					cpu.Hostname,
-					cpu.Id,
-					cpu.Ip,
-					cpu.Usage,
-					cpu.Time)
-
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				if len(cpu.Processes) != 0 {
-					for _, proc := range cpu.Processes {
-
-						_, err = db.Exec("INSERT INTO process(name,cpu,hostname,ip,time)"+
-							" VALUES($1,$2,$3,$4,$5)",
-							proc.Name,
-							proc.Cpu_percent,
-							cpu.Hostname,
-							cpu.Ip,
-							cpu.Time)
-
-						if err != nil {
-							log.Fatal(err)
-						}
-
-					}
-				}
+				saveCpuIfo(cpu)
 
 				log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 			}
@@ -134,7 +104,6 @@ func ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context, nod
 }
 
 func ReadPingStatus(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
-
 	for {
 		message, err := subscribe.Next(ctx)
 		if err != nil {
@@ -150,7 +119,51 @@ func ReadPingStatus(subscribe *pubsub.Subscription, ctx context.Context, node ho
 				log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 			}
 		}
+	}
+}
 
+func ReadBandwidth(counter *metrics.BandwidthCounter, peerlist *[]peer.AddrInfo) {
+
+	ioData := new(variables.IOData)
+
+	for {
+		if len(*peerlist) == 0 {
+			continue
+		}
+		mapPeer := counter.GetBandwidthByPeer()
+		now := TimeFromServer()
+
+		for key, value := range mapPeer {
+			ioData.NodeID = key.Pretty()
+			ioData.TotalIn = value.TotalIn
+			ioData.TotalOut = value.TotalOut
+			ioData.RateIn = int(value.RateIn)
+			ioData.RateOut = int(value.TotalOut)
+			ioData.UUID = uuid.New().String()
+			ioData.Time = now
+
+			fmt.Println(ioData)
+		}
+		time.Sleep(60 * time.Second)
+	}
+}
+
+func saveSystemMessage(peer *variables.PeerInfo, now time.Time, latency int64) {
+
+	_, err := db.Exec("INSERT INTO peer(node_id,uuid,hostname,ip,latency,platform,version,os,time) "+
+		"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+		peer.Id,
+		peer.UUID,
+		peer.Hostname,
+		peer.Ip,
+		latency,
+		peer.Platform,
+		peer.Version,
+		peer.OS,
+		now)
+
+	if err != nil {
+		log.Println(err)
 	}
 }
 
@@ -167,10 +180,45 @@ func savePingStatus(status variables.PingStatus) {
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 }
 
+func saveRamInfo(ram *variables.Ram) {
+
+	_, err := db.Exec("INSERT INTO ram(uuid,hostname,ip,usage,time)"+
+		" VALUES($1,$2,$3,$4,$5,$6)",
+		ram.UUID,
+		ram.Hostname,
+		ram.Id,
+		ram.Ip,
+		ram.Usage,
+		ram.Time)
+
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func saveCpuIfo(cpu *variables.Cpu) {
+
+	_, err := db.Exec("INSERT INTO cpu(uuid,hostname,node_id,ip,usage,model,time)"+
+		" VALUES($1,$2,$3,$4,$5,$6,$7)",
+
+		cpu.Hostname,
+		cpu.Id,
+		cpu.Ip,
+		cpu.Usage,
+		cpu.Time)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+}
+
+//TimeFromServer get the actual time from a remote server using the ntp Protocol
+//The purpose is to synchronize the time between the VMs to avoid problems
 func TimeFromServer() time.Time {
 	now, err := ntp.Time("time.apple.com")
 	if err != nil {
@@ -187,23 +235,4 @@ func handlePanicError() {
 	if r := recover(); r != nil {
 		fmt.Println("Recovered. Error:\n", r)
 	}
-}
-
-func saveTimeMessage(peer *variables.PeerInfo, now time.Time, latency int64) {
-
-	_, err := db.Exec("INSERT INTO peer(uuid,hostname,ip,latency,platform,version,os,time) "+
-		"VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
-		peer.UUID,
-		peer.Hostname,
-		peer.Ip,
-		latency,
-		peer.Platform,
-		peer.Version,
-		peer.OS,
-		now)
-
-	if err != nil {
-		panic(err)
-	}
-
 }

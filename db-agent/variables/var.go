@@ -6,7 +6,7 @@ type PeerInfo struct {
 	Id       string    `json:"node_id"`
 	UUID     string    `json:"uuid"`
 	Ip       string    `json:"ip"`
-	Hostname string    `json:"host,omitempty"`
+	Hostname string    `json:"host"`
 	OS       string    `json:"os"`
 	Platform string    `json:"platform"`
 	Version  string    `json:"version"`
@@ -14,17 +14,13 @@ type PeerInfo struct {
 }
 
 type Cpu struct {
-	Id        string    `json:"node_id"`
-	Ip        string    `json:"ip"`
-	Processes []Process `json:"processes"`
-	Hostname  string    `json:"host,omitempty"`
-	Usage     int       `json:"usage, omitempty"`
-	Time      time.Time `json:"time, omitempty"`
-}
-
-type Process struct {
-	Name        string  `json:"name"`
-	Cpu_percent float64 `json:"cpu_percent"`
+	Id       string    `json:"node_id"`
+	UUID     string    `json:"uuid"`
+	Ip       string    `json:"ip"`
+	Hostname string    `json:"host"`
+	Model    string    `json:"model"`
+	Usage    int       `json:"usage"`
+	Time     time.Time `json:"time"`
 }
 
 type Ram struct {
@@ -43,4 +39,16 @@ type PingStatus struct {
 	Alive  bool      `json:"alive"`
 	RTT    int64     `json:"rtt"`
 	Time   time.Time `json:"time"`
+}
+
+//incoming and outgoing data transferred by the local peer.
+type IOData struct {
+	NodeID   string
+	UUID     string
+	TotalIn  int64
+	TotalOut int64
+	RateIn   int
+	RateOut  int
+	Time     time.Time
+	IP       string
 }

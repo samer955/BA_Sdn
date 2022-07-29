@@ -19,14 +19,13 @@ type PeerInfo struct {
 }
 
 type Cpu struct {
-	Id        string    `json:"node_id"`
-	UUID      string    `json:"uuid"`
-	Ip        string    `json:"ip"`
-	Processes []Process `json:"processes"`
-	Hostname  string    `json:"host,omitempty"`
-	Model     string    `json:"model"`
-	Usage     int       `json:"usage, omitempty"`
-	Time      time.Time `json:"time, omitempty"`
+	Id       string    `json:"node_id"`
+	UUID     string    `json:"uuid"`
+	Ip       string    `json:"ip"`
+	Hostname string    `json:"host,omitempty"`
+	Model    string    `json:"model"`
+	Usage    int       `json:"usage, omitempty"`
+	Time     time.Time `json:"time, omitempty"`
 }
 
 type Ram struct {
@@ -36,11 +35,6 @@ type Ram struct {
 	Hostname string    `json:"host,omitempty"`
 	Usage    int       `json:"usage, omitempty"`
 	Time     time.Time `json:"time, omitempty"`
-}
-
-type Process struct {
-	Name        string  `json:"name"`
-	Cpu_percent float64 `json:"cpu_percent"`
 }
 
 type PingStatus struct {
@@ -99,6 +93,7 @@ func hostname() string {
 	return hostName
 }
 
+//Return different string as platform, version und os
 func platformInformation() (string, string, string) {
 	hostStat, err := host.Info()
 	if err != nil {
@@ -111,6 +106,7 @@ func platformInformation() (string, string, string) {
 	return platform, version, os
 }
 
+//return Cpu Model
 func cpuModel() string {
 	cpuStat, err := cpu.Info()
 	if err != nil {

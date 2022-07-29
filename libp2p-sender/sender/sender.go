@@ -12,15 +12,13 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
-	"github.com/shirou/gopsutil/v3/process"
 	"libp2p-sender/variables"
-	"math"
 	"time"
 )
 
-//SendTimeMessage will send periodically a timestamp in order to calculate the latency in ms
-//between sender and receiver
-func SendTimeMessage(topic *pubsub.Topic, context context.Context, peer *variables.PeerInfo, list *[]peer.AddrInfo) {
+//SendPeerInfo will send system Information of this Peer and periodically a timestamp
+//in order to calculate the latency in ms between sender and receiver
+func SendPeerInfo(topic *pubsub.Topic, context context.Context, peer *variables.PeerInfo, list *[]peer.AddrInfo) {
 
 	for {
 		if len(*list) == 0 {
@@ -55,18 +53,12 @@ func SendCpuInformation(topic *pubsub.Topic, context context.Context, cpu *varia
 		//Update every 10s CPU Usages in %
 		updateCpuPercentage(cpu)
 
-		if cpu.Usage >= 80 {
-			cpu.Processes = getProcessesCPU()
-		}
-
 		//publish the cpu data
 		err := publish(cpu, context, topic)
+
 		if err != nil {
 			fmt.Println("Error publishing content ", err.Error())
 		}
-
-		//set the processes to null after publishing the data
-		cpu.Processes = nil
 
 		time.Sleep(15 * time.Second)
 	}
@@ -98,11 +90,9 @@ func SendRamInformation(topic *pubsub.Topic, context context.Context, ram *varia
 //a bool if the ping was successfully (true if a node is reachable, false if not) and an RTT in ms
 func SendPing(ctx context.Context, node host2.Host, peer peer.AddrInfo, topic *pubsub.Topic) {
 
-	var multiaddr = node.Addrs()
-
 	status := variables.PingStatus{
-		Source: multiaddr[0].String(),
-		Target: peer.Addrs[6].String(),
+		Source: node.ID().Pretty(),
+		Target: peer.ID.Pretty(),
 	}
 	//The Ping function return a channel that still open till the context is alive
 	ch := ping.Ping(ctx, node, peer.ID)
@@ -117,7 +107,7 @@ func SendPing(ctx context.Context, node host2.Host, peer peer.AddrInfo, topic *p
 		} else {
 			status.Alive = false
 			status.RTT = 0
-			fmt.Println("pinged", peer.Addrs[0], "without success")
+			fmt.Println("pinged", peer.Addrs[0], "without success", res.Error)
 		}
 		status.Time = TimeFromServer()
 		status.UUID = uuid.New().String()
@@ -126,10 +116,11 @@ func SendPing(ctx context.Context, node host2.Host, peer peer.AddrInfo, topic *p
 		publish(status, ctx, topic)
 
 		//Next Ping in 1 Min
-		time.Sleep(60 * time.Second)
+		time.Sleep(59 * time.Second)
 	}
 }
 
+//Get the actual RAM Percentage from the system
 func updateRamPercentage(ram *variables.Ram) {
 	ram.Time = TimeFromServer()
 	vmStat, err := mem.VirtualMemory()
@@ -141,6 +132,7 @@ func updateRamPercentage(ram *variables.Ram) {
 	ram.Usage = int(vmStat.UsedPercent)
 }
 
+//Get the actual CPU Percentage from the system
 func updateCpuPercentage(c *variables.Cpu) {
 	c.Time = TimeFromServer()
 	cpuUsage, err := cpu.Percent(0, false)
@@ -161,42 +153,6 @@ func TimeFromServer() time.Time {
 		fmt.Println(err)
 	}
 	return now
-}
-
-func getProcessesCPU() []variables.Process {
-
-	var processList []variables.Process
-
-	//get the actual processes running
-	processes, err := process.Processes()
-
-	if err != nil {
-		fmt.Println("Unable to read processes")
-		return nil
-	}
-
-	for _, proc := range processes {
-		validateProcess(proc, &processList)
-	}
-	return processList
-}
-
-//validate a process: proof if the name is visible and the cpu % usage of it is more than 4%
-func validateProcess(process *process.Process, list *[]variables.Process) {
-
-	name, err := process.Name()
-	if err == nil {
-		perc, err := process.CPUPercent()
-		if err == nil {
-			if perc >= 4.0 {
-				pro := variables.Process{
-					Name:        name,
-					Cpu_percent: math.Round(perc*100) / 100}
-
-				*list = append(*list, pro)
-			}
-		}
-	}
 }
 
 func publish(object interface{}, context context.Context, topic *pubsub.Topic) error {

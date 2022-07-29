@@ -23,6 +23,7 @@ const discoveryName = "discoveryRoom"
 
 var PeerList []peer.AddrInfo
 var PingTopic *pubsub.Topic
+var BandCounter *metrics.BandwidthCounter
 
 func main() {
 
@@ -32,10 +33,6 @@ func main() {
 	const roomPing = "ping"
 
 	context := context.Background()
-
-	//return a tracker for the Bandwidth of the local Peer
-	//counter := new(metrics.BandwidthCounter)
-
 	node := createHost()
 
 	//return a new Pubsub Service using the GossipSub router
@@ -47,27 +44,24 @@ func main() {
 	timeTopic := subscriber.JoinTopic(roomTime)
 	timeSubscribe := subscriber.Subscribe(timeTopic)
 
-	cpuTopic := subscriber.JoinTopic(roomCpu)
-	cpuSubscribe := subscriber.Subscribe(cpuTopic)
-
-	ramTopic := subscriber.JoinTopic(roomRam)
-	ramSubscribe := subscriber.Subscribe(ramTopic)
+	//cpuTopic := subscriber.JoinTopic(roomCpu)
+	//cpuSubscribe := subscriber.Subscribe(cpuTopic)
+	//
+	//ramTopic := subscriber.JoinTopic(roomRam)
+	//ramSubscribe := subscriber.Subscribe(ramTopic)
 
 	// setup local mDNS discovery
-	if err := setupDiscovery(node); err != nil {
-		time.Sleep(60 * time.Second)
-		setupDiscovery(node)
-	}
-	//read Timestamp of peers in a separated thread
-	go receiver.ReadTimeMessages(timeSubscribe, context, node)
+	setupDiscovery(node)
+
+	//read System Information of peers in a separated thread
+	go receiver.ReadSystemInfo(timeSubscribe, context, node)
 	//read cpu information of peers in a separated thread
-	go receiver.ReadCpuInformation(cpuSubscribe, context, node)
+	//go receiver.ReadCpuInformation(cpuSubscribe, context, node)
 	//read ram information of peers in a separated thread
-	go receiver.ReadRamInformation(ramSubscribe, context, node)
+	//go receiver.ReadRamInformation(ramSubscribe, context, node)
 	//read all the Ping Status from the other Peers
 	go receiver.ReadPingStatus(pingSubscribe, context, node)
-
-	//go readBandwidth(counter)
+	go receiver.ReadBandwidth(BandCounter, &PeerList)
 
 	//Run the program till its stopped (forced)
 	ch := make(chan os.Signal, 1)
@@ -77,9 +71,11 @@ func main() {
 }
 
 func createHost() host.Host {
+	//return a tracker for the Bandwidth of the local Peer
+	BandCounter = metrics.NewBandwidthCounter()
 	// create a new libp2p Host that listens on a TCP port
-	node, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	//if an error appear we try again after 60 second
+	node, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"), libp2p.BandwidthReporter(BandCounter))
+	//if an error appears we try again after 60 second
 	if err != nil {
 		time.Sleep(60 * time.Second)
 		createHost()
@@ -99,21 +95,17 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 		PeerList = append(PeerList, info)
 
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
-		//go receiver.SendPing(context.Background(), d.node, info)
 	}
 }
 
 func setupDiscovery(node host.Host) error {
 	discovery := mdns.NewMdnsService(node, discoveryName, &discoveryNotifee{node: node})
-	return discovery.Start()
-}
+	start := discovery.Start()
 
-func readBandwidth(counter *metrics.BandwidthCounter) {
-	for {
-		total := counter.GetBandwidthTotals()
-		fmt.Println(total)
-		mapPeer := counter.GetBandwidthByPeer()
-		fmt.Println(mapPeer)
+	//If any error is returned try again in 1min
+	if start != nil {
 		time.Sleep(60 * time.Second)
+		setupDiscovery(node)
 	}
+	return start
 }

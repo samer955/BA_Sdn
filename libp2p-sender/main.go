@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	_ "github.com/lib/pq"
@@ -11,12 +12,14 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	"libp2p-sender/sender"
 	"libp2p-sender/subscriber"
-	"libp2p-sender/variables"
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
 )
 
 type discoveryNotifee struct {
@@ -37,11 +40,7 @@ func main() {
 
 	context := context.Background()
 
-	// create a new libp2p Host that listens on a random TCP port
-	node, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	if err != nil {
-		panic(err)
-	}
+	node := createHost()
 
 	//return a new pubsub Service using the GossipSub router
 	_ = subscriber.NewPubSubService(context, node)
@@ -60,21 +59,22 @@ func main() {
 
 	// setup local mDNS discovery
 	if err := setupDiscovery(node); err != nil {
-		panic(err)
+		time.Sleep(60 * time.Second)
+		setupDiscovery(node)
 	}
 
-	fmt.Println(GetLocalIP())
+	//peer_sys := variables.NewPeerInfo(GetLocalIP(), node.ID().Pretty())
+	//peer_cpu := variables.NewCpu(GetLocalIP(), node.ID().Pretty())
+	//peer_ram := variables.NewRam(GetLocalIP(), node.ID().Pretty())
 
-	peer_lat := variables.NewPeerInfo(GetLocalIP(), node.ID().Pretty())
-	//	peer_cpu := variables.NewCpu(GetLocalIP(), node.ID().Pretty())
-	//	peer_ram := variables.NewRam(GetLocalIP(), node.ID().Pretty())
-	//
-	//	//send timestamp on a separated thread
-	go sender.SendTimeMessage(timeTopic, context, peer_lat, &PeerList)
-	//	//send CPU information on a separated thread
-	//	go sender.SendCpuInformation(cpuTopic, context, peer_cpu, &PeerList)
-	//	//send RAM information on a separated thread
-	//	go sender.SendRamInformation(ramTopic, context, peer_ram, &PeerList)
+	//send timestamp on a separated thread
+	//go sender.SendPeerInfo(timeTopic, context, peer_sys, &PeerList)
+	////send CPU information on a separated thread
+	//go sender.SendCpuInformation(cpuTopic, context, peer_cpu, &PeerList)
+	////send RAM information on a separated thread
+	//go sender.SendRamInformation(ramTopic, context, peer_ram, &PeerList)
+
+	netstatTCP()
 
 	//Run the program till its stopped (forced)
 	ch := make(chan os.Signal, 1)
@@ -96,10 +96,10 @@ func GetLocalIP() string {
 	if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
 		return addr.IP.String()
 	}
-
 	return ""
 }
 
+//The node will be notificated when a new Peer is discovered
 func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 	fmt.Printf("discovered a new peer %s\n", info.ID.Pretty())
 
@@ -108,11 +108,68 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 		PeerList = append(PeerList, info)
 
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
+
 		sender.SendPing(context.Background(), d.node, info, PingTopic)
 	}
 }
 
 func setupDiscovery(node host.Host) error {
 	discovery := mdns.NewMdnsService(node, discoveryName, &discoveryNotifee{node: node})
-	return discovery.Start()
+	start := discovery.Start()
+
+	//If any error is returned try again in 1min
+	if start != nil {
+		time.Sleep(60 * time.Second)
+		setupDiscovery(node)
+	}
+	return start
+}
+
+func createHost() host.Host {
+	// create a new libp2p Host that listens on a TCP port
+	node, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
+	//if an error appear we try again after 60 second
+	if err != nil {
+		time.Sleep(60 * time.Second)
+		createHost()
+	}
+	return node
+}
+
+//Working on Windows and Linux in order to get the number of open tcp queue.
+//Execution of the "netstat -na" Command in order to get all the ESTABLISHED Queue
+func netstatTCP() {
+
+	out, err := exec.Command("netstat", "-na").Output()
+	if err != nil {
+		fmt.Println(err)
+	}
+	output := string(out)
+	tcpQueue, err := numberOfTcpQueue(output)
+	if err != nil {
+		fmt.Println("error")
+	}
+	fmt.Println(tcpQueue)
+	time.Sleep(15 * time.Second)
+	netstatTCP()
+}
+
+func numberOfTcpQueue(s string) (tcpConn int, err error) {
+
+	var lines [][]string
+
+	scanner := bufio.NewScanner(strings.NewReader(s))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+		words := strings.Fields(line)
+		if (strings.HasPrefix(words[0], "TCP") || strings.HasPrefix(words[0], "tcp")) &&
+			strings.HasPrefix(words[len(words)-1], "ESTAB") {
+			lines = append(lines, words)
+		}
+	}
+	err = scanner.Err()
+	return len(lines), err
 }
