@@ -5,6 +5,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/host"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"log"
+	"time"
 )
 
 var psub *pubsub.PubSub
@@ -14,7 +15,8 @@ func NewPubSubService(ctx context.Context, host host.Host) *pubsub.PubSub {
 
 	ps, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
-		panic(err)
+		time.Sleep(60 * time.Second)
+		NewPubSubService(ctx, host)
 	}
 	psub = ps
 	return ps
