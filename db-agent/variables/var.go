@@ -52,3 +52,15 @@ type IOData struct {
 	Time     time.Time
 	IP       string
 }
+
+//Queue Size = number of open TCP connections
+//Received = number of segments received
+//Sent = number of segments sent
+type TCPstatus struct {
+	UUID      string `json:"uuid"`
+	Hostname  string `json:"hostname"`
+	Ip        string `json:"ip"`
+	QueueSize int    `json:"queue_size"`
+	Received  int    `json:"received"`
+	Sent      int    `json:"sent"`
+}
