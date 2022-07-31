@@ -16,7 +16,7 @@ func NewPubSubService(ctx context.Context, host host.Host) *pubsub.PubSub {
 
 	ps, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
-		panic(err)
+		NewPubSubService(ctx, host)
 	}
 	psub = ps
 	return ps
