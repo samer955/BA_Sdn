@@ -96,17 +96,7 @@ func SendPing(ctx context.Context, node host.Host, peer peer.AddrInfo, topic *pu
 	for {
 		res := <-ch
 
-		if res.Error == nil {
-			status.Alive = true
-			status.RTT = res.RTT.Milliseconds()
-			fmt.Println("pinged", peer.Addrs[0], "in", res.RTT)
-		} else {
-			status.Alive = false
-			status.RTT = 0
-			fmt.Println("pinged", peer.Addrs[0], "without success", res.Error)
-		}
-		status.Time = components.TimeFromServer()
-		status.UUID = uuid.New().String()
+		components.CheckPingStatus(res, status, peer)
 
 		//publish the status of the Ping in the topic
 		subscriber.Publish(status, ctx, topic)

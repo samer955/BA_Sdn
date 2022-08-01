@@ -39,7 +39,7 @@ func NewCpu(ip, nodeId string) *Cpu {
 func cpuModel() string {
 	cpuStat, err := cpu.Info()
 	if err != nil {
-		return ""
+		return "Not available"
 	}
 	return cpuStat[0].ModelName
 }
