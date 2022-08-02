@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/beevik/ntp"
 	"github.com/shirou/gopsutil/v3/host"
-	os2 "os"
+	"os"
 	"time"
 )
 
@@ -22,8 +22,8 @@ type PeerInfo struct {
 // NewPeerInfo create method
 func NewPeerInfo(ip, nodeId string) *PeerInfo {
 
-	var platform, version, os = platformInformation()
-	var host, _ = os2.Hostname()
+	var platform, version, oS = platformInformation()
+	var host, _ = os.Hostname()
 
 	return &PeerInfo{
 		Id:       nodeId,
@@ -31,7 +31,7 @@ func NewPeerInfo(ip, nodeId string) *PeerInfo {
 		Hostname: host,
 		Platform: platform,
 		Version:  version,
-		OS:       os,
+		OS:       oS,
 	}
 }
 

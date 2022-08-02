@@ -1,8 +1,12 @@
 package components
 
 import (
+	"errors"
+	"fmt"
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestCpu(t *testing.T) {
@@ -53,7 +57,8 @@ func TestNumbertcpQueue(t *testing.T) {
 
 func TestTcpSegmentsWindows(t *testing.T) {
 
-	var netstat = "\nIPv4 Statistics\n" +
+	var netstat = "" +
+		"\nIPv4 Statistics\n" +
 		"\n  Packets Received                   = 9147172" +
 		"\n  Received Header Errors             = 0" +
 		"\n  Received Address Errors            = 33" +
@@ -69,11 +74,173 @@ func TestTcpSegmentsWindows(t *testing.T) {
 		"\n  Reassembly Successful              = 23469" +
 		"\n  Reassembly Failures                = 0" +
 		"\n  Datagrams Successfully Fragmented  = 19244" +
-		"\n  Datagrams Failing Fragmentation    = 0\n  Fragments Created                  = 38488\n\nIPv6 Statistics\n\n  Packets Received                   = 0\n  Received Header Errors             = 0\n  Received Address Errors            = 0\n  Datagrams Forwarded                = 0\n  Unknown Protocols Received         = 0\n  Received Packets Discarded         = 0\n  Received Packets Delivered         = 336740\n  Output Requests                    = 339616\n  Routing Discards                   = 0\n  Discarded Output Packets           = 0\n  Output Packet No Route             = 0\n  Reassembly Required                = 0\n  Reassembly Successful              = 0\n  Reassembly Failures                = 0\n  Datagrams Successfully Fragmented  = 0\n  Datagrams Failing Fragmentation    = 0\n  Fragments Created                  = 0\n\nICMPv4 Statistics\n\n                            Received    Sent\n  Messages                  5873        9527\n  Errors                    0           0\n  Destination Unreachable   3979        7199\n  Time Exceeded             608         1\n  Parameter Problems        0           0\n  Source Quenches           0           0\n  Redirects                 0           0\n  Echo Replies              104         3\n  Echos                     148         2324\n  Timestamps                0           0\n  Timestamp Replies         0           0\n  Address Masks             0           0\n  Address Mask Replies      0           0\n  Router Solicitations      0           0\n  Router Advertisements     1034        0\n\nICMPv6 Statistics\n\n                            Received    Sent\n  Messages                  0           0\n  Errors                    0           0\n  Destination Unreachable   0           0\n  Packet Too Big            0           0\n  Time Exceeded             0           0\n  Parameter Problems        0           0\n  Echos                     0           0\n  Echo Replies              0           0\n  MLD Queries               0           0\n  MLD Reports               0           0\n  MLD Dones                 0           0\n  Router Solicitations      0           0\n  Router Advertisements     0           0\n  Neighbor Solicitations    0           0         \n  Neighbor Advertisements   0           0\n  Redirects                 0           0\n  Router Renumberings       0           0\n\nTCP Statistics for IPv4\n\n  Active Opens                        = 347883\n  Passive Opens                       = 86083\n  Failed Connection Attempts          = 13218\n  Reset Connections                   = 272367\n  Current Connections                 = 44\n  Segments Received                   = 8011276\n  Segments Sent                       = 7388244\n  Segments Retransmitted              = 34858\n\nTCP Statistics for IPv6\n\n  Active Opens                        = 390\n  Passive Opens                       = 172\n  No Ports              = 48499\n  Receive Errors        = 4\n  Datagrams Sent        = 1901984\n\nUDP Statistics for IPv6\n\n  Datagrams Received    = 1312791\n  No Ports              = 0\n  Receive Errors        = 0\n  Datagrams Sent        = 335866\n"
+		"\n  Datagrams Failing Fragmentation    = 0" +
+		"\n  Fragments Created                  = 38488" +
+		"\n" +
+		"\nIPv6 Statistics\n" +
+		"\n  Packets Received                   = 0" +
+		"\n  Received Header Errors             = 0" +
+		"\n  Received Address Errors            = 0" +
+		"\n  Datagrams Forwarded                = 0" +
+		"\n  Unknown Protocols Received         = 0" +
+		"\n  Received Packets Discarded         = 0" +
+		"\n  Received Packets Delivered         = 336740" +
+		"\n  Output Requests                    = 339616" +
+		"\n  Routing Discards                   = 0" +
+		"\n  Discarded Output Packets           = 0" +
+		"\n  Output Packet No Route             = 0" +
+		"\n  Reassembly Required                = 0" +
+		"\n  Reassembly Successful              = 0" +
+		"\n  Reassembly Failures                = 0" +
+		"\n  Datagrams Successfully Fragmented  = 0" +
+		"\n  Datagrams Failing Fragmentation    = 0" +
+		"\n  Fragments Created                  = 0" +
+		"\n" +
+		"\nICMPv4 Statistics\n" +
+		"\n                            Received    Sent" +
+		"\n  Messages                  5873        9527" +
+		"\n  Errors                    0           0" +
+		"\n  Destination Unreachable   3979        7199" +
+		"\n  Time Exceeded             608         1" +
+		"\n  Parameter Problems        0           0" +
+		"\n  Source Quenches           0           0" +
+		"\n  Redirects                 0           0" +
+		"\n  Echo Replies              104         3" +
+		"\n  Echos                     148         2324" +
+		"\n  Timestamps                0           0" +
+		"\n  Timestamp Replies         0           0" +
+		"\n  Address Masks             0           0" +
+		"\n  Address Mask Replies      0           0" +
+		"\n  Router Solicitations      0           0" +
+		"\n  Router Advertisements     1034        0" +
+		"\n\nICMPv6 Statistics" +
+		"\n" +
+		"\n                            Received    Sent" +
+		"\n  Messages                  0           0" +
+		"\n  Errors                    0           0" +
+		"\n  Destination Unreachable   0           0" +
+		"\n  Packet Too Big            0           0" +
+		"\n  Time Exceeded             0           0" +
+		"\n  Parameter Problems        0           0" +
+		"\n  Echos                     0           0" +
+		"\n  Echo Replies              0           0" +
+		"\n  MLD Queries               0           0" +
+		"\n  MLD Reports               0           0" +
+		"\n  MLD Dones                 0           0" +
+		"\n  Router Solicitations      0           0" +
+		"\n  Router Advertisements     0           0" +
+		"\n  Neighbor Solicitations    0           0" +
+		"\n  Neighbor Advertisements   0           0" +
+		"\n  Redirects                 0           0" +
+		"\n  Router Renumberings       0           0" +
+		"\n" +
+		"\nTCP Statistics for IPv4" +
+		"\n" +
+		"\n  Active Opens                        = 347883" +
+		"\n  Passive Opens                       = 86083" +
+		"\n  Failed Connection Attempts          = 13218" +
+		"\n  Reset Connections                   = 272367" +
+		"\n  Current Connections                 = 44" +
+		"\n  Segments Received                   = 8011276" +
+		"\n  Segments Sent                       = 7388244" +
+		"\n  Segments Retransmitted              = 34858" +
+		"\n" +
+		"\nTCP Statistics for IPv6" +
+		"\n" +
+		"\n  Active Opens                        = 390" +
+		"\n  Passive Opens                       = 172" +
+		"\n  No Ports              = 48499" +
+		"\n  Receive Errors        = 4" +
+		"\n  Datagrams Sent        = 1901984" +
+		"\n" +
+		"\nUDP Statistics for IPv6" +
+		"\n" +
+		"\n  Datagrams Received    = 1312791" +
+		"\n  No Ports              = 0" +
+		"\n  Receive Errors        = 0" +
+		"\n  Datagrams Sent        = 335866\n"
 
 	var exp_received, exp_sent = 8011276, 7388244
 
 	var got_received, got_sent, _ = numberOfSegmentsWindows(netstat)
+
+	if exp_received != got_received {
+		t.Fatal("unexpected segments received")
+	}
+
+	if exp_sent != got_sent {
+		t.Fatal("unexpected segments sent")
+	}
+}
+
+func TestTcpSegmentsNumberLinux(t *testing.T) {
+
+	var netstat = "" +
+		"IcmpMsg:" +
+		"\n    InType3: 43" +
+		"\n    InType8: 5" +
+		"\n    InType9: 13" +
+		"\n    OutType0: 5" +
+		"\n    OutType3: 43" +
+		"\nTcp:" +
+		"\n    207 active connection openings" +
+		"\n    0 passive connection openings" +
+		"\n    2 failed connection attempts" +
+		"\n    83 connection resets received" +
+		"\n    26 connections established" +
+		"\n    5461 segments received" +
+		"\n    7043 segments sent out" +
+		"\n    62 segments retransmitted" +
+		"\n    0 bad segments received" +
+		"\n    11 resets sent" +
+		"\nUdpLite:" +
+		"\nTcpExt:" +
+		"\n    21 TCP sockets finished time wait in fast timer" +
+		"\n    48 delayed acks sent" +
+		"\n    Quick ack mode was activated 39 times" +
+		"\n    1519 packet headers predicted" +
+		"\n    1024 acknowledgments not containing data payload received" +
+		"\n    497 predicted acknowledgments" +
+		"\n    TCPSackRecovery: 4" +
+		"\n    Detected reordering 6 times using SACK" +
+		"\n    1 congestion windows recovered without slow start after partial ack" +
+		"\n    TCPLostRetransmit: 19" +
+		"\n    4 fast retransmits" +
+		"\n    TCPTimeouts: 50" +
+		"\n    TCPLossProbes: 23" +
+		"\n    TCPLossProbeRecovery: 2" +
+		"\n    TCPBacklogCoalesce: 2" +
+		"\n    TCPDSACKOldSent: 41" +
+		"\n    TCPDSACKRecv: 20" +
+		"\n    3 connections reset due to unexpected data" +
+		"\n    1 connections aborted due to timeout" +
+		"\n    TCPDSACKIgnoredNoUndo: 6" +
+		"\n    TCPSackShiftFallback: 9" +
+		"\n    TCPRcvCoalesce: 447" +
+		"\n    TCPOFOQueue: 32" +
+		"\n    TCPSpuriousRtxHostQueues: 1" +
+		"\n    TCPAutoCorking: 73" +
+		"\n    TCPSynRetrans: 17" +
+		"\n    TCPOrigDataSent: 2658" +
+		"\n    TCPKeepAlive: 515" +
+		"\n    TCPDelivered: 2865" +
+		"\nIpExt:" +
+		"\n    InNoRoutes: 1" +
+		"\n    InMcastPkts: 855" +
+		"\n    OutMcastPkts: 614" +
+		"\n    InBcastPkts: 8" +
+		"\n    OutBcastPkts: 4" +
+		"\n    InOctets: 3989314" +
+		"\n    OutOctets: 1319948" +
+		"\n    InMcastOctets: 142731" +
+		"\n    OutMcastOctets: 104424" +
+		"\n    InBcastOctets: 872" +
+		"\n    OutBcastOctets: 310" +
+		"\n    InNoECTPkts: 8587"
+
+	var exp_received, exp_sent = 5461, 7043
+
+	var got_received, got_sent, _ = numbersOfSegmentsLinux(netstat)
 
 	if exp_received != got_received {
 		t.Fatal("unexpected segments received")
@@ -106,4 +273,45 @@ func TestRam_UpdateRamPercentage(t *testing.T) {
 	ram.UpdateRamPercentage()
 
 	assert.NotEqual(t, ram.Usage, 0)
+}
+
+func TestNewPingStatus(t *testing.T) {
+	status := NewPingStatus("node_A", "node_B")
+
+	assert.NotNil(t, status)
+	assert.Equal(t, status.Source, "node_A")
+	assert.Equal(t, status.Target, "node_B")
+
+}
+
+func TestCheckPingStatusPositive(t *testing.T) {
+
+	status := NewPingStatus("node_A", "node_B")
+
+	fmt.Println(status)
+	result := ping.Result{Error: nil, RTT: 5 * time.Millisecond}
+
+	status.SetPingStatus(result)
+
+	assert.Equal(t, status.Alive, true)
+	assert.Equal(t, status.RTT, int64(5))
+	assert.NotEqual(t, status.UUID, "")
+	assert.NotEqual(t, status.Time, (time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC)))
+
+}
+
+func TestCheckPingStatusNegative(t *testing.T) {
+
+	status := NewPingStatus("node_A", "node_B")
+
+	fmt.Println(status)
+	result := ping.Result{Error: errors.New("any Error"), RTT: 5 * time.Millisecond}
+
+	status.SetPingStatus(result)
+
+	assert.Equal(t, status.Alive, false)
+	assert.Equal(t, status.RTT, int64(0))
+	assert.NotEqual(t, status.UUID, "")
+	assert.NotEqual(t, status.Time, (time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC)))
+
 }

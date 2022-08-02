@@ -3,10 +3,11 @@ package components
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	"time"
 )
+
+var peerNotifee = false
 
 type PingStatus struct {
 	UUID   string    `json:"uuid"`
@@ -17,15 +18,21 @@ type PingStatus struct {
 	Time   time.Time `json:"time"`
 }
 
-func CheckPingStatus(res ping.Result, status PingStatus, peer peer.AddrInfo) {
+func NewPingStatus(source, target string) *PingStatus {
+	return &PingStatus{
+		Source: source,
+		Target: target}
+}
+
+func (status *PingStatus) SetPingStatus(res ping.Result) {
 	if res.Error == nil {
 		status.Alive = true
 		status.RTT = res.RTT.Milliseconds()
-		fmt.Println("pinged", peer.Addrs[0], "in", res.RTT)
+		fmt.Println("pinged", status.Target, "in", res.RTT)
 	} else {
 		status.Alive = false
 		status.RTT = 0
-		fmt.Println("pinged", peer.Addrs[0], "without success", res.Error)
+		fmt.Println("pinged", status.Target, "without success", res.Error)
 	}
 	status.Time = TimeFromServer()
 	status.UUID = uuid.New().String()

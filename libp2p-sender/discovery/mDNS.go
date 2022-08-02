@@ -16,8 +16,6 @@ type discoveryNotifee struct {
 	node host.Host
 }
 
-const discoveryName = "discoveryRoom"
-
 var PeerList []peer.AddrInfo
 var pingTopic *pubsub.Topic
 
@@ -33,20 +31,23 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 		d.node.Connect(context.Background(), info)
 		PeerList = append(PeerList, info)
 
+		fmt.Println(d.node.Peerstore().Peers())
+
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
 
 		service.SendPing(context.Background(), d.node, info, pingTopic)
 	}
 }
 
-func SetupDiscovery(node host.Host) error {
+func SetupDiscovery(node host.Host, discoveryName string) error {
 	discovery := mdns.NewMdnsService(node, discoveryName, &discoveryNotifee{node: node})
+
 	start := discovery.Start()
 
 	//If any error is returned try again in 1min
 	if start != nil {
 		time.Sleep(60 * time.Second)
-		SetupDiscovery(node)
+		SetupDiscovery(node, discoveryName)
 	}
 	return start
 }

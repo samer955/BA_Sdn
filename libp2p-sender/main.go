@@ -20,11 +20,14 @@ import (
 
 func main() {
 
-	const roomPing = "ping"
-	const roomTime = "latency"
-	const roomCpu = "cpu"
-	const roomRam = "ram"
-	const roomTcp = "tcp"
+	const (
+		discoveryName = "discoveryRoom"
+		roomPing      = "ping"
+		roomTime      = "latency"
+		roomCpu       = "cpu"
+		roomRam       = "ram"
+		roomTcp       = "tcp"
+	)
 
 	context := context.Background()
 
@@ -51,7 +54,7 @@ func main() {
 	_ = subscriber.Subscribe(tcpTopic)
 
 	// setup local mDNS discovery
-	discovery.SetupDiscovery(node)
+	discovery.SetupDiscovery(node, discoveryName)
 
 	ipAddress := GetLocalIP()
 
@@ -63,9 +66,9 @@ func main() {
 	//send timestamp on a separated thread
 	//go service.SendPeerInfo(timeTopic, context, peer_sys, &PeerList)
 	////send CPU information on a separated thread
-	go service.SendCpuInformation(cpuTopic, context, peer_cpu, &discovery.PeerList)
+	go service.SendCpuInfo(cpuTopic, context, peer_cpu, &discovery.PeerList)
 	////send RAM information on a separated thread
-	//go service.SendRamInformation(ramTopic, context, peer_ram, &PeerList)
+	//go service.SendRamInfo(ramTopic, context, peer_ram, &PeerList)
 
 	go service.SendTCPstatus(tcpTopic, context, peer_tcp, &discovery.PeerList)
 

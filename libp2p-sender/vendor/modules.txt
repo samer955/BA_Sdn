@@ -162,6 +162,7 @@ github.com/libp2p/go-flow-metrics
 github.com/libp2p/go-libp2p
 github.com/libp2p/go-libp2p/config
 github.com/libp2p/go-libp2p/p2p/discovery/mdns
+github.com/libp2p/go-libp2p/p2p/discovery/mocks
 github.com/libp2p/go-libp2p/p2p/host/autonat
 github.com/libp2p/go-libp2p/p2p/host/autonat/pb
 github.com/libp2p/go-libp2p/p2p/host/autorelay
@@ -447,9 +448,13 @@ github.com/spacemonkeygo/spacelog
 # github.com/spaolacci/murmur3 v1.1.0
 ## explicit
 github.com/spaolacci/murmur3
+# github.com/stretchr/objx v0.4.0
+## explicit; go 1.12
+github.com/stretchr/objx
 # github.com/stretchr/testify v1.7.5
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
+github.com/stretchr/testify/mock
 # github.com/tklauser/go-sysconf v0.3.10
 ## explicit; go 1.13
 github.com/tklauser/go-sysconf

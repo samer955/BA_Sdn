@@ -113,20 +113,24 @@ func numbersOfSegmentsLinux(s string) (int, int, error) {
 			continue
 		}
 		words := strings.Fields(line)
-		if strings.Contains(words[1], "segments") && strings.Contains(words[2], "received") {
-			value, err := strconv.Atoi(words[0])
-			if err != nil {
-				fmt.Println(err)
-			} else {
-				segmentsReceived = value
+		if len(words) == 3 {
+			if strings.Contains(words[1], "segments") && strings.Contains(words[2], "received") {
+				value, err := strconv.Atoi(words[0])
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					segmentsReceived = value
+				}
 			}
 		}
-		if strings.Contains(words[0], "segments") && strings.Contains(words[2], "sent") {
-			value, err := strconv.Atoi(words[0])
-			if err != nil {
-				fmt.Println(err)
-			} else {
-				segmentsSent = value
+		if len(words) == 4 {
+			if strings.Contains(words[1], "segments") && strings.Contains(words[2], "sent") {
+				value, err := strconv.Atoi(words[0])
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					segmentsSent = value
+				}
 			}
 		}
 	}
