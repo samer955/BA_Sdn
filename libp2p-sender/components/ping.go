@@ -24,7 +24,8 @@ func NewPingStatus(source, target string) *PingStatus {
 		Target: target}
 }
 
-func (status *PingStatus) SetPingStatus(res ping.Result) {
+func (status *PingStatus) SetPingStatus(res ping.Result, deadline *int) {
+
 	if res.Error == nil {
 		status.Alive = true
 		status.RTT = res.RTT.Milliseconds()
@@ -33,6 +34,7 @@ func (status *PingStatus) SetPingStatus(res ping.Result) {
 		status.Alive = false
 		status.RTT = 0
 		fmt.Println("pinged", status.Target, "without success", res.Error)
+		*deadline--
 	}
 	status.Time = TimeFromServer()
 	status.UUID = uuid.New().String()

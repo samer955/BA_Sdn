@@ -97,20 +97,27 @@ func sendRamInfo(topic *pubsub.Topic, context context.Context, ram *components.R
 //a bool if the ping was successfully (true if a node is reachable, false if not) and an RTT in ms
 func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *pubsub.Topic) {
 
+	var pingDeadline = 10
+
 	status := components.NewPingStatus(host.ID().Pretty(), target.ID.Pretty())
 	//The Ping function return a channel that still open till the context is alive
 	ch := ping.Ping(ctx, host, target.ID)
 
 	for {
+		//after 10 negative Ping stops the function
+		if pingDeadline == 0 {
+			fmt.Printf("Stopped ping from %s to %s\n", status.Source, status.Target)
+			return
+		}
 		res := <-ch
 
-		status.SetPingStatus(res)
+		status.SetPingStatus(res, &pingDeadline)
 
 		//publish the status of the Ping in the topic
 		subscriber.Publish(status, ctx, topic)
 
 		//Next Ping in 1 Min
-		time.Sleep(59 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 

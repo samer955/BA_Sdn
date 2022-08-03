@@ -287,11 +287,12 @@ func TestNewPingStatus(t *testing.T) {
 func TestCheckPingStatusPositive(t *testing.T) {
 
 	status := NewPingStatus("node_A", "node_B")
+	var pingDeadline = 10
 
 	fmt.Println(status)
 	result := ping.Result{Error: nil, RTT: 5 * time.Millisecond}
 
-	status.SetPingStatus(result)
+	status.SetPingStatus(result, &pingDeadline)
 
 	assert.Equal(t, status.Alive, true)
 	assert.Equal(t, status.RTT, int64(5))
@@ -303,15 +304,17 @@ func TestCheckPingStatusPositive(t *testing.T) {
 func TestCheckPingStatusNegative(t *testing.T) {
 
 	status := NewPingStatus("node_A", "node_B")
+	var pingDeadline = 10
 
 	fmt.Println(status)
 	result := ping.Result{Error: errors.New("any Error"), RTT: 5 * time.Millisecond}
 
-	status.SetPingStatus(result)
+	status.SetPingStatus(result, &pingDeadline)
 
 	assert.Equal(t, status.Alive, false)
 	assert.Equal(t, status.RTT, int64(0))
 	assert.NotEqual(t, status.UUID, "")
 	assert.NotEqual(t, status.Time, (time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC)))
+	assert.Equal(t, pingDeadline, 9)
 
 }
