@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -19,6 +20,12 @@ import (
 )
 
 func main() {
+
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
 
 	const (
 		discoveryName = "discoveryRoom"
@@ -58,18 +65,18 @@ func main() {
 
 	ipAddress := GetLocalIP()
 
-	//peer_sys := variables.NewPeerInfo(ipAddress, node.ID().Pretty())
+	peer_sys := components.NewPeerInfo(ipAddress, node.ID().Pretty(), os.Getenv("ROLE_HOST"))
 	peer_cpu := components.NewCpu(ipAddress, node.ID().Pretty())
-	//peer_ram := variables.NewRam(ipAddress, node.ID().Pretty())
+	peer_ram := components.NewRam(ipAddress, node.ID().Pretty())
 	peer_tcp := components.NewTCPstatus(ipAddress)
 
 	//send timestamp on a separated thread
-	//go service.SendPeerInfo(timeTopic, context, peer_sys, &PeerList)
-	////send CPU information on a separated thread
+	go service.SendPeerInfo(timeTopic, context, peer_sys, &discovery.PeerList)
+	//send CPU information on a separated thread
 	go service.SendCpuInfo(cpuTopic, context, peer_cpu, &discovery.PeerList)
-	////send RAM information on a separated thread
-	//go service.SendRamInfo(ramTopic, context, peer_ram, &PeerList)
-
+	//send RAM information on a separated thread
+	go service.SendRamInfo(ramTopic, context, peer_ram, &discovery.PeerList)
+	//send tcp status on a separated thread
 	go service.SendTCPstatus(tcpTopic, context, peer_tcp, &discovery.PeerList)
 
 	//Run the program till its stopped (forced)

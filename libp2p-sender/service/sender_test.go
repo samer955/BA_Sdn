@@ -32,7 +32,7 @@ func setup(node host.Host, roomtest string) (*pubsub.Topic, *pubsub.Subscription
 func TestSendPeerInfo(t *testing.T) {
 
 	node, _ := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	peer_info := components.NewPeerInfo("1.1.1.1", "test_ID")
+	peer_info := components.NewPeerInfo("1.1.1.1", "test_ID", "sender")
 	topic, subscr, ctx := setup(node, "test")
 
 	t.Cleanup(func() {

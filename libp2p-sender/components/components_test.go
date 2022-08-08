@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	"github.com/stretchr/testify/assert"
+	"os/exec"
 	"testing"
 	"time"
 )
@@ -317,4 +318,46 @@ func TestCheckPingStatusNegative(t *testing.T) {
 	assert.NotEqual(t, status.Time, (time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC)))
 	assert.Equal(t, pingDeadline, 9)
 
+}
+
+func TestGetNumberOfOnlineUseLinux(t *testing.T) {
+
+	var outputWithZeroUser = ""
+
+	var outputWithUsers = "" +
+		"ubuntu   pts/0        2022-08-08 08:12 (62.84.220.226)\n" +
+		"ubuntu   pts/1        2022-08-08 09:56 (62.84.220.226)"
+
+	zeroUser := outputToIntLinux(outputWithZeroUser)
+	onlineUser := outputToIntLinux(outputWithUsers)
+
+	assert.Equal(t, zeroUser, 0)
+	assert.Equal(t, onlineUser, 2)
+}
+
+func TestGetNumberOfOnlineUserWindows(t *testing.T) {
+
+	var outputWithZeroUser = ""
+
+	var outputWithTwoUsers = "" +
+		" USERNAME              SESSIONNAME        ID  STATE   IDLE TIME  LOGON TIME\n" +
+		">s.osman               console            31  Active      13:53  8/8/2022 10:06 AM\n" +
+		">s.osman               console            32  Active      13:54  8/8/2022 10:16 AM\n" +
+		">s.osman               console            33  Offline     13:55  8/8/2022 10:17 AM"
+
+	zeroUser := outputToIntWindows(outputWithZeroUser)
+	twoUsers := outputToIntWindows(outputWithTwoUsers)
+
+	assert.Equal(t, zeroUser, 0)
+	assert.Equal(t, twoUsers, 2)
+}
+
+func Test(t *testing.T) {
+	out, err := exec.Command("query", "user").Output()
+
+	if err != nil {
+		fmt.Println("unableToRead")
+	}
+
+	fmt.Println(string(out))
 }

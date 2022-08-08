@@ -9,18 +9,20 @@ import (
 )
 
 type PeerInfo struct {
-	Id       string    `json:"node_id"`
-	UUID     string    `json:"uuid"`
-	Ip       string    `json:"ip"`
-	Hostname string    `json:"host,omitempty"`
-	OS       string    `json:"os"`
-	Platform string    `json:"platform"`
-	Version  string    `json:"version"`
-	Time     time.Time `json:"time"`
+	Id         string    `json:"node_id"`
+	UUID       string    `json:"uuid"`
+	Ip         string    `json:"ip"`
+	Hostname   string    `json:"host,omitempty"`
+	OS         string    `json:"os"`
+	Platform   string    `json:"platform"`
+	Version    string    `json:"version"`
+	Role       string    `json:"role"`
+	OnlineUser int       `json:"online_user"`
+	Time       time.Time `json:"time"`
 }
 
 // NewPeerInfo create method
-func NewPeerInfo(ip, nodeId string) *PeerInfo {
+func NewPeerInfo(ip, nodeId, role string) *PeerInfo {
 
 	var platform, version, oS = platformInformation()
 	var host, _ = os.Hostname()
@@ -32,6 +34,7 @@ func NewPeerInfo(ip, nodeId string) *PeerInfo {
 		Platform: platform,
 		Version:  version,
 		OS:       oS,
+		Role:     role,
 	}
 }
 

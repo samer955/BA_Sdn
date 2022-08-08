@@ -31,8 +31,9 @@ func sendPeerInfo(topic *pubsub.Topic, context context.Context, peer *components
 	fmt.Println("sending time")
 
 	//Set the time when the message is sent
-	peer.Time = components.TimeFromServer()
 	peer.UUID = uuid.New().String()
+	peer.OnlineUser = components.GetNumberOfOnlineUser()
+	peer.Time = components.TimeFromServer()
 
 	err := subscriber.Publish(peer, context, topic)
 	if err != nil {

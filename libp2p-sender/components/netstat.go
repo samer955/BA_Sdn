@@ -43,7 +43,7 @@ func TcpQueueSize() int {
 	output := string(out)
 	tcpQueue, err := numberOfTcpQueue(output)
 	if err != nil {
-		fmt.Println("error")
+		fmt.Println(err)
 	}
 	return tcpQueue
 }
