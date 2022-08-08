@@ -20,11 +20,13 @@ var BandCounter *metrics.BandwidthCounter
 
 func main() {
 
-	const roomTime = "latency"
-	const roomCpu = "cpu"
-	const roomRam = "ram"
-	const roomPing = "ping"
-	const roomTcp = "tcp"
+	const (
+		roomTime = "latency"
+		roomCpu  = "cpu"
+		roomRam  = "ram"
+		roomPing = "ping"
+		roomTcp  = "tcp"
+	)
 
 	context := context.Background()
 
@@ -42,25 +44,27 @@ func main() {
 	tcpTopic := subscriber.JoinTopic(roomTcp)
 	tcpSubscribe := subscriber.Subscribe(tcpTopic)
 
-	//cpuTopic := subscriber.JoinTopic(roomCpu)
-	//cpuSubscribe := subscriber.Subscribe(cpuTopic)
-	//
-	//ramTopic := subscriber.JoinTopic(roomRam)
-	//ramSubscribe := subscriber.Subscribe(ramTopic)
+	cpuTopic := subscriber.JoinTopic(roomCpu)
+	cpuSubscribe := subscriber.Subscribe(cpuTopic)
+
+	ramTopic := subscriber.JoinTopic(roomRam)
+	ramSubscribe := subscriber.Subscribe(ramTopic)
 
 	// setup local mDNS discovery
 	discovery.SetupDiscovery(node)
 
+	collector := service.NewDataCollector()
+
 	//read System Information of peers in a separated thread
-	go service.ReadSystemInfo(timeSubscribe, context, node)
+	go collector.ReadSystemInfo(timeSubscribe, context, node)
 	//read cpu information of peers in a separated thread
-	//go service.ReadCpuInformation(cpuSubscribe, context, node)
+	go collector.ReadCpuInformation(cpuSubscribe, context, node)
 	//read ram information of peers in a separated thread
-	//go service.ReadRamInformation(ramSubscribe, context, node)
+	go collector.ReadRamInformation(ramSubscribe, context, node)
 	//read all the Ping Status from the other Peers
-	go service.ReadPingStatus(pingSubscribe, context, node)
+	go collector.ReadPingStatus(pingSubscribe, context, node)
 	//go service.ReadBandwidth(BandCounter, &PeerList)
-	go service.ReadTCPstatus(tcpSubscribe, context, node)
+	go collector.ReadTCPstatus(tcpSubscribe, context, node)
 
 	//Run the program till its stopped (forced)
 	ch := make(chan os.Signal, 1)

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"db-agent/database"
 	"db-agent/variables"
 	"encoding/json"
 	"fmt"
@@ -16,10 +15,13 @@ import (
 	"time"
 )
 
-var db = database.Database()
-var nodeIpMap = make(map[string]string)
+type dataCollector struct{}
 
-func ReadSystemInfo(subscribe *pubsub.Subscription, context context.Context, node host2.Host) {
+func NewDataCollector() *dataCollector {
+	return &dataCollector{}
+}
+
+func (collector *dataCollector) ReadSystemInfo(subscribe *pubsub.Subscription, context context.Context, node host2.Host) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -34,10 +36,6 @@ func ReadSystemInfo(subscribe *pubsub.Subscription, context context.Context, nod
 					//Unmarshal the file into the peer struct
 					json.Unmarshal(message.Data, peer)
 
-					nodeIpMap[peer.Id] = peer.Ip
-
-					fmt.Println(nodeIpMap)
-
 					//Get the actual time from a remote Server
 					now := TimeFromServer()
 
@@ -48,7 +46,7 @@ func ReadSystemInfo(subscribe *pubsub.Subscription, context context.Context, nod
 					log.Println("latency :", latency)
 
 					//Here we store latency of the peer in the database as well as system information
-					saveSystemMessage(peer, now, latency)
+					SaveSystemMessage(peer, now, latency)
 
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
@@ -57,91 +55,103 @@ func ReadSystemInfo(subscribe *pubsub.Subscription, context context.Context, nod
 	}
 }
 
-func ReadRamInformation(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
+func (collector *dataCollector) ReadRamInformation(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
 	for {
-		message, err := subscribe.Next(ctx)
-		if err != nil {
-			log.Println("cannot read from topic")
-		} else {
-			if message.ReceivedFrom.String() != node.ID().Pretty() {
+		func() {
+			defer handlePanicError()
+			message, err := subscribe.Next(ctx)
+			if err != nil {
+				log.Println("cannot read from topic")
+			} else {
+				if message.ReceivedFrom.String() != node.ID().Pretty() {
 
-				ram := new(variables.Ram)
+					ram := new(variables.Ram)
 
-				//parse the JSON-encoded data and store the result into ram
-				json.Unmarshal(message.Data, ram)
+					//parse the JSON-encoded data and store the result into ram
+					json.Unmarshal(message.Data, ram)
 
-				//Here we store cpu usage percentage of the peer in the database as well
-				//as node_id, ip_address to identify the peer
-				saveRamInfo(ram)
+					//Here we store cpu usage percentage of the peer in the database as well
+					//as node_id, ip_address to identify the peer
+					SaveRamInfo(ram)
 
-				log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
+					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
+				}
 			}
-		}
+		}()
 	}
 }
 
-func ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
+func (collector *dataCollector) ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
 	for {
-		message, err := subscribe.Next(ctx)
-		if err != nil {
-			log.Println("cannot read from topic")
-		} else {
-			if message.ReceivedFrom.String() != node.ID().Pretty() {
+		func() {
+			defer handlePanicError()
+			message, err := subscribe.Next(ctx)
+			if err != nil {
+				log.Println("cannot read from topic")
+			} else {
+				if message.ReceivedFrom.String() != node.ID().Pretty() {
 
-				cpu := new(variables.Cpu)
+					cpu := new(variables.Cpu)
 
-				//parse the JSON-encoded data and store the result into cpu
-				json.Unmarshal(message.Data, cpu)
+					//parse the JSON-encoded data and store the result into cpu
+					json.Unmarshal(message.Data, cpu)
 
-				//Here we store cpu usage percentage of the peer in the database as well
-				//as node_id, ip_address to identify the peer
-				saveCpuIfo(cpu)
+					//Here we store cpu usage percentage of the peer in the database as well
+					//as node_id, ip_address to identify the peer
+					SaveCpuIfo(cpu)
 
-				log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
+					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
+				}
 			}
-		}
+		}()
 	}
 }
 
-func ReadPingStatus(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
+func (collector *dataCollector) ReadPingStatus(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
 	for {
-		message, err := subscribe.Next(ctx)
-		if err != nil {
-			log.Println("cannot read from topic")
-		} else {
-			if message.ReceivedFrom.String() != node.ID().Pretty() {
+		func() {
+			defer handlePanicError()
+			message, err := subscribe.Next(ctx)
+			if err != nil {
+				log.Println("cannot read from topic")
+			} else {
+				if message.ReceivedFrom.String() != node.ID().Pretty() {
 
-				status := new(variables.PingStatus)
-				//parse the JSON-encoded data and store the result into cpu
-				json.Unmarshal(message.Data, status)
+					status := new(variables.PingStatus)
+					//parse the JSON-encoded data and store the result into cpu
+					json.Unmarshal(message.Data, status)
 
-				savePingStatus(*status)
-				log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
+					SavePingStatus(*status)
+					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
+				}
 			}
-		}
+		}()
 	}
 }
 
-func ReadTCPstatus(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
+func (collector *dataCollector) ReadTCPstatus(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
 	for {
-		message, err := subscribe.Next(ctx)
-		if err != nil {
-			log.Println("cannot read from topic")
-		} else {
-			if message.ReceivedFrom.String() != node.ID().Pretty() {
+		func() {
+			defer handlePanicError()
+			message, err := subscribe.Next(ctx)
+			if err != nil {
+				log.Println("cannot read from topic")
+			} else {
+				if message.ReceivedFrom.String() != node.ID().Pretty() {
 
-				tcpStat := new(variables.TCPstatus)
-				//parse the JSON-encoded data and store the result into cpu
-				json.Unmarshal(message.Data, tcpStat)
+					tcpStat := new(variables.TCPstatus)
+					//parse the JSON-encoded data and store the result into cpu
+					json.Unmarshal(message.Data, tcpStat)
 
-				saveTCPstatus(*tcpStat)
-				log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
+					SaveTCPstatus(*tcpStat)
+					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
+				}
 			}
-		}
+		}()
 	}
 }
 
-func ReadBandwidth(counter *metrics.BandwidthCounter, peerlist *[]peer.AddrInfo) {
+func (collector *dataCollector) ReadBandwidth(counter *metrics.BandwidthCounter, peerlist *[]peer.AddrInfo) {
 
 	ioData := new(variables.IOData)
 

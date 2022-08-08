@@ -1,80 +1,95 @@
-create table info
+create table peer
 (
-    id       serial
-        constraint latency_pk
+    uuid        text not null
+        constraint peer_pk
             primary key,
-    hostname text,
-    node_id  text,
-    ip       text,
-    latency  integer,
-    time     timestamp with time zone not null
+    hostname    text,
+    ip          text,
+    os          text,
+    platform    text,
+    version     text,
+    latency     integer,
+    time        timestamp with time zone,
+    node_id     text,
+    online_user integer
 );
 
-alter table info
+alter table peer
     owner to "user";
 
-grant select on info to grafanareader;
+create unique index peer_uuid_uindex
+    on peer (uuid);
 
-create table cpu
+create table status
 (
-    id       serial
-        constraint cpu_pk
+    uuid     text not null
+        constraint status_pk
             primary key,
-    hostname text,
-    node_id  text,
-    ip       text,
-    usage    integer,
-    time     timestamp with time zone not null
+    source   text,
+    target   text,
+    is_alive boolean,
+    rtt      integer,
+    time     timestamp with time zone
 );
 
-alter table cpu
+alter table status
     owner to "user";
 
-grant select on cpu to grafanareader;
+create unique index status_uuid_uindex
+    on status (uuid);
 
 create table ram
 (
-    id       serial
+    uuid     text not null
         constraint ram_pk
             primary key,
     hostname text,
     node_id  text,
     ip       text,
     usage    integer,
-    time     timestamp with time zone not null
+    time     timestamp with time zone
 );
 
 alter table ram
     owner to "user";
 
-grant select on ram to grafanareader;
+create unique index ram_uuid_uindex
+    on ram (uuid);
 
-create table process
+create table cpu
 (
-    id       serial
-        constraint process_pk
+    uuid     text not null
+        constraint cpu_pk
             primary key,
-    name     text,
-    cpu      double precision,
+    node_id  text,
     ip       text,
     hostname text,
+    model    text,
+    usage    integer,
     time     timestamp with time zone
 );
 
-alter table process
+alter table cpu
     owner to "user";
 
-create table status
+create unique index cpu_uuid_uindex
+    on cpu (uuid);
+
+create table tcp
 (
-    id        serial
-        constraint status_pk
+    uuid       text not null
+        constraint tcp_pk
             primary key,
-    source_id text,
-    target_id text,
-    is_alive  boolean,
-    rtt       integer,
-    time      timestamp with time zone
+    hostname   text,
+    ip         text,
+    queue_size integer,
+    received   integer,
+    sent       integer
 );
 
-alter table status
+alter table tcp
     owner to "user";
+
+create unique index tcp_uuid_uindex
+    on tcp (uuid);
+

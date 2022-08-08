@@ -3,14 +3,15 @@ package variables
 import "time"
 
 type PeerInfo struct {
-	Id       string    `json:"node_id"`
-	UUID     string    `json:"uuid"`
-	Ip       string    `json:"ip"`
-	Hostname string    `json:"host"`
-	OS       string    `json:"os"`
-	Platform string    `json:"platform"`
-	Version  string    `json:"version"`
-	Time     time.Time `json:"time"`
+	Id         string    `json:"node_id"`
+	UUID       string    `json:"uuid"`
+	Ip         string    `json:"ip"`
+	Hostname   string    `json:"host"`
+	OS         string    `json:"os"`
+	Platform   string    `json:"platform"`
+	Version    string    `json:"version"`
+	Time       time.Time `json:"time"`
+	OnlineUser int       `json:"online_user"`
 }
 
 type Cpu struct {
