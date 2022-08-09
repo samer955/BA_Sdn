@@ -8,18 +8,20 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 //Queue Size = number of open TCP connections
 //Received = number of segments received
 //Sent = number of segments sent
 type TCPstatus struct {
-	UUID      string `json:"uuid"`
-	Hostname  string `json:"hostname"`
-	Ip        string `json:"ip"`
-	QueueSize int    `json:"queue_size"`
-	Received  int    `json:"received"`
-	Sent      int    `json:"sent"`
+	UUID      string    `json:"uuid"`
+	Hostname  string    `json:"hostname"`
+	Ip        string    `json:"ip"`
+	QueueSize int       `json:"queue_size"`
+	Received  int       `json:"received"`
+	Sent      int       `json:"sent"`
+	Time      time.Time `json:"time"`
 }
 
 func NewTCPstatus(ip string) *TCPstatus {

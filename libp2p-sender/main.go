@@ -65,7 +65,7 @@ func main() {
 
 	ipAddress := GetLocalIP()
 
-	peer_sys := components.NewPeerInfo(ipAddress, node.ID().Pretty(), os.Getenv("ROLE_HOST"))
+	peer_sys := components.NewPeerInfo(ipAddress, node.ID(), os.Getenv("ROLE_HOST"))
 	peer_cpu := components.NewCpu(ipAddress, node.ID().Pretty())
 	peer_ram := components.NewRam(ipAddress, node.ID().Pretty())
 	peer_tcp := components.NewTCPstatus(ipAddress)

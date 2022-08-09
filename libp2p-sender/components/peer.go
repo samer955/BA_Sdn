@@ -3,13 +3,14 @@ package components
 import (
 	"fmt"
 	"github.com/beevik/ntp"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/shirou/gopsutil/v3/host"
 	"os"
 	"time"
 )
 
 type PeerInfo struct {
-	Id         string    `json:"node_id"`
+	Id         peer.ID   `json:"node_id"`
 	UUID       string    `json:"uuid"`
 	Ip         string    `json:"ip"`
 	Hostname   string    `json:"host,omitempty"`
@@ -22,7 +23,7 @@ type PeerInfo struct {
 }
 
 // NewPeerInfo create method
-func NewPeerInfo(ip, nodeId, role string) *PeerInfo {
+func NewPeerInfo(ip string, nodeId peer.ID, role string) *PeerInfo {
 
 	var platform, version, oS = platformInformation()
 	var host, _ = os.Hostname()

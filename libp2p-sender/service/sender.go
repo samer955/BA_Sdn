@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
-	host "github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
@@ -105,7 +105,7 @@ func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *
 	ch := ping.Ping(ctx, host, target.ID)
 
 	for {
-		//after 10 negative Ping stops the function
+		//after 10 negative Ping stop to ping the Peer
 		if pingDeadline == 0 {
 			fmt.Printf("Stopped ping from %s to %s\n", status.Source, status.Target)
 			return
@@ -141,6 +141,7 @@ func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *compone
 
 	tcpIfo.Received = received
 	tcpIfo.Sent = sent
+	tcpIfo.Time = components.TimeFromServer()
 
 	err := subscriber.Publish(tcpIfo, context, topic)
 	if err != nil {
