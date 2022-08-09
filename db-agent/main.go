@@ -16,6 +16,7 @@ import (
 	"time"
 )
 
+// BandwidthCounter tracks incoming and outgoing data transferred by the local peer.
 var BandCounter *metrics.BandwidthCounter
 
 func main() {
@@ -53,7 +54,7 @@ func main() {
 	// setup local mDNS discovery
 	discovery.SetupDiscovery(node)
 
-	collector := service.NewDataCollector()
+	collector := service.NewDataCollector(BandCounter)
 
 	//read System Information of peers in a separated thread
 	go collector.ReadSystemInfo(timeSubscribe, context, node)
@@ -63,7 +64,7 @@ func main() {
 	go collector.ReadRamInformation(ramSubscribe, context, node)
 	//read all the Ping Status from the other Peers
 	go collector.ReadPingStatus(pingSubscribe, context, node)
-	//go service.ReadBandwidth(BandCounter, &PeerList)
+	//read TCP infos from other Peers in a separated thread
 	go collector.ReadTCPstatus(tcpSubscribe, context, node)
 
 	//Run the program till its stopped (forced)

@@ -50,7 +50,7 @@ func SaveSystemMessage(peer *variables.PeerInfo, now time.Time, latency int64) {
 
 	_, err := myDb.Exec("INSERT INTO peer(node_id,uuid,hostname,ip,latency,platform,version,os,online_user,time) "+
 		"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
-		peer.Id,
+		peer.Id.Pretty(),
 		peer.UUID,
 		peer.Hostname,
 		peer.Ip,
@@ -117,14 +117,33 @@ func SaveCpuIfo(cpu *variables.Cpu) {
 }
 
 func SaveTCPstatus(tcpStatus variables.TCPstatus) {
-	_, err := myDb.Exec("INSERT INTO tcp(uuid,hostname,ip,queue_size,received,sent) "+
-		"VALUES($1,$2,$3,$4,$5,$6)",
+	_, err := myDb.Exec("INSERT INTO tcp(uuid,hostname,ip,queue_size,received,sent,time) "+
+		"VALUES($1,$2,$3,$4,$5,$6,$7)",
 		tcpStatus.UUID,
 		tcpStatus.Hostname,
 		tcpStatus.Ip,
 		tcpStatus.QueueSize,
 		tcpStatus.Received,
-		tcpStatus.Sent)
+		tcpStatus.Sent,
+		tcpStatus.Time)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func SaveThroughput(data *variables.IOData) {
+	_, err := myDb.Exec("INSERT INTO throughput(uuid,node_id,ip,total_in,total_out,rate_in,rate_out,hostname,time) "+
+		"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+		data.UUID,
+		data.NodeID,
+		data.Ip,
+		data.TotalIn,
+		data.TotalOut,
+		data.RateIn,
+		data.RateOut,
+		data.Hostname,
+		data.Time)
 
 	if err != nil {
 		panic(err)

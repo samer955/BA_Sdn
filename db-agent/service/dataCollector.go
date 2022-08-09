@@ -9,16 +9,19 @@ import (
 	"github.com/google/uuid"
 	host2 "github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/metrics"
-	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"log"
 	"time"
 )
 
-type dataCollector struct{}
+type dataCollector struct {
+	counter *metrics.BandwidthCounter
+}
 
-func NewDataCollector() *dataCollector {
-	return &dataCollector{}
+func NewDataCollector(bandCounter *metrics.BandwidthCounter) *dataCollector {
+	return &dataCollector{
+		counter: bandCounter,
+	}
 }
 
 func (collector *dataCollector) ReadSystemInfo(subscribe *pubsub.Subscription, context context.Context, node host2.Host) {
@@ -47,6 +50,8 @@ func (collector *dataCollector) ReadSystemInfo(subscribe *pubsub.Subscription, c
 
 					//Here we store latency of the peer in the database as well as system information
 					SaveSystemMessage(peer, now, latency)
+
+					collector.getBandWidth(peer)
 
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
@@ -151,30 +156,25 @@ func (collector *dataCollector) ReadTCPstatus(subscribe *pubsub.Subscription, ct
 	}
 }
 
-func (collector *dataCollector) ReadBandwidth(counter *metrics.BandwidthCounter, peerlist *[]peer.AddrInfo) {
+func (collector *dataCollector) getBandWidth(host *variables.PeerInfo) {
 
 	ioData := new(variables.IOData)
 
-	for {
-		if len(*peerlist) == 0 {
-			continue
-		}
-		mapPeer := counter.GetBandwidthByPeer()
-		now := TimeFromServer()
+	// GetBandwidthForPeer returns a Stats struct with bandwidth metrics associated with the given peer.ID.
+	// The metrics returned include all traffic sent / received for the peer, regardless of protocol.
+	throughput := collector.counter.GetBandwidthForPeer(host.Id)
 
-		for key, value := range mapPeer {
-			ioData.NodeID = key.Pretty()
-			ioData.TotalIn = value.TotalIn
-			ioData.TotalOut = value.TotalOut
-			ioData.RateIn = int(value.RateIn)
-			ioData.RateOut = int(value.TotalOut)
-			ioData.UUID = uuid.New().String()
-			ioData.Time = now
+	ioData.UUID = uuid.New().String()
+	ioData.NodeID = host.Id.Pretty()
+	ioData.Hostname = host.Hostname
+	ioData.TotalIn = throughput.TotalIn
+	ioData.TotalOut = throughput.TotalOut
+	ioData.RateIn = int(throughput.RateIn)
+	ioData.RateOut = int(throughput.TotalOut)
+	ioData.Ip = host.Ip
+	ioData.Time = host.Time
 
-			fmt.Println(ioData)
-		}
-		time.Sleep(60 * time.Second)
-	}
+	SaveThroughput(ioData)
 }
 
 //TimeFromServer get the actual time from a remote server using the ntp Protocol

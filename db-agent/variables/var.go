@@ -1,9 +1,12 @@
 package variables
 
-import "time"
+import (
+	"github.com/libp2p/go-libp2p-core/peer"
+	"time"
+)
 
 type PeerInfo struct {
-	Id         string    `json:"node_id"`
+	Id         peer.ID   `json:"node_id"`
 	UUID       string    `json:"uuid"`
 	Ip         string    `json:"ip"`
 	Hostname   string    `json:"host"`
@@ -44,24 +47,26 @@ type PingStatus struct {
 
 //incoming and outgoing data transferred by the local peer.
 type IOData struct {
-	NodeID   string
-	UUID     string
-	TotalIn  int64
-	TotalOut int64
-	RateIn   int
-	RateOut  int
-	Time     time.Time
-	IP       string
+	NodeID   string    `json:"node_id"`
+	UUID     string    `json:"uuid"`
+	TotalIn  int64     `json:"total_in"`
+	TotalOut int64     `json:"total_out"`
+	RateIn   int       `json:"rate_in"`
+	RateOut  int       `json:"rate_out"`
+	Time     time.Time `json:"time"`
+	Ip       string    `json:"ip"`
+	Hostname string    `json:"hostname"`
 }
 
 //Queue Size = number of open TCP connections
 //Received = number of segments received
 //Sent = number of segments sent
 type TCPstatus struct {
-	UUID      string `json:"uuid"`
-	Hostname  string `json:"hostname"`
-	Ip        string `json:"ip"`
-	QueueSize int    `json:"queue_size"`
-	Received  int    `json:"received"`
-	Sent      int    `json:"sent"`
+	UUID      string    `json:"uuid"`
+	Hostname  string    `json:"hostname"`
+	Ip        string    `json:"ip"`
+	QueueSize int       `json:"queue_size"`
+	Received  int       `json:"received"`
+	Sent      int       `json:"sent"`
+	Time      time.Time `json:"time"`
 }
