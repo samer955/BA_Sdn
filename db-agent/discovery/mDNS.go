@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-const discoveryName = "discoveryRoom"
-
 var PeerList []peer.AddrInfo
 
 type discoveryNotifee struct {
@@ -29,14 +27,14 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 	}
 }
 
-func SetupDiscovery(node host.Host) error {
+func SetupDiscovery(node host.Host, discoveryName string) error {
 	discovery := mdns.NewMdnsService(node, discoveryName, &discoveryNotifee{node: node})
 	start := discovery.Start()
 
 	//If any error is returned try again in 1min
 	if start != nil {
 		time.Sleep(60 * time.Second)
-		SetupDiscovery(node)
+		SetupDiscovery(node, "")
 	}
 	return start
 }

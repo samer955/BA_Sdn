@@ -31,10 +31,9 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 		d.node.Connect(context.Background(), info)
 		PeerList = append(PeerList, info)
 
-		fmt.Println(d.node.Peerstore().Peers())
-
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
 
+		//once discovered a Peer the host start to ping him and the result will then be published
 		service.SendPing(context.Background(), d.node, info, pingTopic)
 	}
 }

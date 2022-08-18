@@ -8,24 +8,25 @@ import (
 	"time"
 )
 
-var psub *pubsub.PubSub
+type PubSubService struct {
+	psub *pubsub.PubSub
+}
 
 // NewPubSubService return a new PubSub Service using the GossipSub Service
-func NewPubSubService(ctx context.Context, host host.Host) *pubsub.PubSub {
+func NewPubSubService(ctx context.Context, host host.Host) *PubSubService {
 
 	ps, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
 		time.Sleep(60 * time.Second)
 		NewPubSubService(ctx, host)
 	}
-	psub = ps
-	return ps
+	return &PubSubService{psub: ps}
 }
 
 // JoinTopic allow the Peers to join a Topic on Pubsub
-func JoinTopic(room string) *pubsub.Topic {
+func (service *PubSubService) JoinTopic(room string) *pubsub.Topic {
 
-	topic, err := psub.Join(room)
+	topic, err := service.psub.Join(room)
 	if err != nil {
 		log.Println("Error while subscribing in the Time-Topic")
 	} else {
@@ -36,7 +37,7 @@ func JoinTopic(room string) *pubsub.Topic {
 }
 
 // Subscribe returns a new Subscription for the topic.
-func Subscribe(topic *pubsub.Topic) *pubsub.Subscription {
+func (service *PubSubService) Subscribe(topic *pubsub.Topic) *pubsub.Subscription {
 
 	subscribe, err := topic.Subscribe()
 

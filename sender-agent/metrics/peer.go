@@ -1,4 +1,4 @@
-package components
+package metrics
 
 import (
 	"fmt"
@@ -53,7 +53,7 @@ func platformInformation() (string, string, string) {
 }
 
 //TimeFromServer get the actual time from a remote server using the ntp Protocol
-//The purpose is to synchronize the time between the VMs to avoid problems
+//The purpose is to synchronize the time between the Systems in order to avoid problems
 func TimeFromServer() time.Time {
 	now, err := ntp.Time("time.apple.com")
 	if err != nil {

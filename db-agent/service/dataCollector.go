@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"db-agent/repository"
 	"db-agent/variables"
 	"encoding/json"
 	"fmt"
@@ -15,12 +16,14 @@ import (
 )
 
 type dataCollector struct {
-	counter *metrics.BandwidthCounter
+	counter    *metrics.BandwidthCounter
+	repository *repository.PostGresRepo
 }
 
-func NewDataCollector(bandCounter *metrics.BandwidthCounter) *dataCollector {
+func NewDataCollectorService(bandCounter *metrics.BandwidthCounter, repo *repository.PostGresRepo) *dataCollector {
 	return &dataCollector{
-		counter: bandCounter,
+		counter:    bandCounter,
+		repository: repo,
 	}
 }
 
@@ -49,8 +52,7 @@ func (collector *dataCollector) ReadSystemInfo(subscribe *pubsub.Subscription, c
 					log.Println("latency :", latency)
 
 					//Here we store latency of the peer in the database as well as system information
-					SaveSystemMessage(peer, now, latency)
-
+					collector.repository.SaveSystemMessage(peer, now, latency)
 					collector.getBandWidth(peer)
 
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
@@ -77,7 +79,7 @@ func (collector *dataCollector) ReadRamInformation(subscribe *pubsub.Subscriptio
 
 					//Here we store cpu usage percentage of the peer in the database as well
 					//as node_id, ip_address to identify the peer
-					SaveRamInfo(ram)
+					collector.repository.SaveRamInfo(ram)
 
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
@@ -103,7 +105,7 @@ func (collector *dataCollector) ReadCpuInformation(subscribe *pubsub.Subscriptio
 
 					//Here we store cpu usage percentage of the peer in the database as well
 					//as node_id, ip_address to identify the peer
-					SaveCpuIfo(cpu)
+					collector.repository.SaveCpuIfo(cpu)
 
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
@@ -126,7 +128,7 @@ func (collector *dataCollector) ReadPingStatus(subscribe *pubsub.Subscription, c
 					//parse the JSON-encoded data and store the result into cpu
 					json.Unmarshal(message.Data, status)
 
-					SavePingStatus(*status)
+					collector.repository.SavePingStatus(status)
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
 			}
@@ -148,7 +150,7 @@ func (collector *dataCollector) ReadTCPstatus(subscribe *pubsub.Subscription, ct
 					//parse the JSON-encoded data and store the result into cpu
 					json.Unmarshal(message.Data, tcpStat)
 
-					SaveTCPstatus(*tcpStat)
+					collector.repository.SaveTCPstatus(tcpStat)
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
 			}
@@ -174,7 +176,7 @@ func (collector *dataCollector) getBandWidth(host *variables.PeerInfo) {
 	ioData.Ip = host.Ip
 	ioData.Time = host.Time
 
-	SaveThroughput(ioData)
+	collector.repository.SaveThroughput(ioData)
 }
 
 //TimeFromServer get the actual time from a remote server using the ntp Protocol

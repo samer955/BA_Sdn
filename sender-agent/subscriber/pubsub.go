@@ -7,24 +7,28 @@ import (
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-pubsub"
 	"log"
+	"time"
 )
 
-var psub *pubsub.PubSub
+type PubSubService struct {
+	psub *pubsub.PubSub
+}
 
 // NewPubSubService return a new PubSub Service using the GossipSub Service
-func NewPubSubService(ctx context.Context, host host.Host) *pubsub.PubSub {
+func NewPubSubService(ctx context.Context, host host.Host) *PubSubService {
 
 	ps, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
+		time.Sleep(60 * time.Second)
 		NewPubSubService(ctx, host)
 	}
-	psub = ps
-	return ps
+	return &PubSubService{psub: ps}
 }
 
-func JoinTopic(room string) *pubsub.Topic {
+// JoinTopic allow the Peers to join a Topic on Pubsub
+func (service *PubSubService) JoinTopic(room string) *pubsub.Topic {
 
-	topic, err := psub.Join(room)
+	topic, err := service.psub.Join(room)
 	if err != nil {
 		log.Println("Error while subscribing in the Time-Topic")
 	} else {
@@ -34,11 +38,12 @@ func JoinTopic(room string) *pubsub.Topic {
 	return topic
 }
 
-func Subscribe(topic *pubsub.Topic) *pubsub.Subscription {
+// Subscribe returns a new Subscription for the topic.
+func (service *PubSubService) Subscribe(topic *pubsub.Topic) *pubsub.Subscription {
 
 	subscribe, err := topic.Subscribe()
 
-	if err != nil {
+	if (err) != nil {
 		log.Println("cannot subscribe to: ", topic.String())
 	} else {
 		log.Println("Subscribed to, " + subscribe.Topic())

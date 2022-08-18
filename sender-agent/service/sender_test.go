@@ -8,7 +8,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"libp2p-sender/components"
+	"libp2p-sender/metrics"
 	"libp2p-sender/subscriber"
 	"testing"
 	"time"
@@ -32,7 +32,7 @@ func setup(node host.Host, roomtest string) (*pubsub.Topic, *pubsub.Subscription
 func TestSendPeerInfo(t *testing.T) {
 
 	node, _ := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	peer_info := components.NewPeerInfo("1.1.1.1", "test_ID", "sender")
+	peer_info := metrics.NewPeerInfo("1.1.1.1", "test_ID", "sender")
 	topic, subscr, ctx := setup(node, "test")
 
 	t.Cleanup(func() {
@@ -42,7 +42,7 @@ func TestSendPeerInfo(t *testing.T) {
 		subscr.Cancel()
 	})
 
-	sendPeerInfo(topic, ctx, peer_info)
+	sendPeerInfo(topic, ctx, peer_info, nil)
 	message, _ := subscr.Next(ctx)
 
 	peerToBytesConverted, _ := json.Marshal(peer_info)
@@ -55,7 +55,7 @@ func TestSendPeerInfo(t *testing.T) {
 func TestSendCpuInfo(t *testing.T) {
 
 	node, _ := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	peer_cpu := components.NewCpu("1.1.1.1", "test_ID")
+	peer_cpu := metrics.NewCpu("1.1.1.1", "test_ID")
 	topic, subscr, ctx := setup(node, "test")
 
 	t.Cleanup(func() {
@@ -65,7 +65,7 @@ func TestSendCpuInfo(t *testing.T) {
 		subscr.Cancel()
 	})
 
-	sendCpuInfo(topic, ctx, peer_cpu)
+	sendCpuInfo(topic, nil, ctx, peer_cpu)
 	message, _ := subscr.Next(ctx)
 
 	peerToBytesConverted, _ := json.Marshal(peer_cpu)
@@ -78,7 +78,7 @@ func TestSendCpuInfo(t *testing.T) {
 func TestSendRamInfo(t *testing.T) {
 
 	node, _ := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	peer_ram := components.NewRam("1.1.1.1", "test_ID")
+	peer_ram := metrics.NewRam("1.1.1.1", "test_ID")
 	topic, subscr, ctx := setup(node, "test")
 
 	t.Cleanup(func() {
@@ -88,7 +88,7 @@ func TestSendRamInfo(t *testing.T) {
 		subscr.Cancel()
 	})
 
-	sendRamInfo(topic, ctx, peer_ram)
+	sendRamInfo(topic, nil, ctx, peer_ram)
 	message, _ := subscr.Next(ctx)
 
 	peerToBytesConverted, _ := json.Marshal(peer_ram)

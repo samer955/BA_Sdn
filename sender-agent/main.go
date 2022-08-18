@@ -7,7 +7,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
-	"libp2p-sender/components"
 	"libp2p-sender/discovery"
 	"libp2p-sender/service"
 	"libp2p-sender/subscriber"
@@ -30,7 +29,7 @@ func main() {
 	const (
 		discoveryName = "discoveryRoom"
 		roomPing      = "ping"
-		roomTime      = "latency"
+		roomSystem    = "system"
 		roomCpu       = "cpu"
 		roomRam       = "ram"
 		roomTcp       = "tcp"
@@ -41,43 +40,38 @@ func main() {
 	node := createHost()
 
 	//return a new pubsub Service using the GossipSub router
-	_ = subscriber.NewPubSubService(context, node)
+	pubsub := subscriber.NewPubSubService(context, node)
 
-	timeTopic := subscriber.JoinTopic(roomTime)
-	_ = subscriber.Subscribe(timeTopic)
+	systemTopic := pubsub.JoinTopic(roomSystem)
+	_ = pubsub.Subscribe(systemTopic)
 
-	pingTopic := subscriber.JoinTopic(roomPing)
-	_ = subscriber.Subscribe(pingTopic)
+	pingTopic := pubsub.JoinTopic(roomPing)
+	_ = pubsub.Subscribe(pingTopic)
 
 	discovery.SetPingTopic(pingTopic)
 
-	cpuTopic := subscriber.JoinTopic(roomCpu)
-	_ = subscriber.Subscribe(cpuTopic)
+	cpuTopic := pubsub.JoinTopic(roomCpu)
+	_ = pubsub.Subscribe(cpuTopic)
 
-	ramTopic := subscriber.JoinTopic(roomRam)
-	_ = subscriber.Subscribe(ramTopic)
+	ramTopic := pubsub.JoinTopic(roomRam)
+	_ = pubsub.Subscribe(ramTopic)
 
-	tcpTopic := subscriber.JoinTopic(roomTcp)
-	_ = subscriber.Subscribe(tcpTopic)
+	tcpTopic := pubsub.JoinTopic(roomTcp)
+	_ = pubsub.Subscribe(tcpTopic)
 
 	// setup local mDNS discovery
 	discovery.SetupDiscovery(node, discoveryName)
 
-	ipAddress := GetLocalIP()
+	sender := service.NewSenderService(node, GetLocalIP())
 
-	peer_sys := components.NewPeerInfo(ipAddress, node.ID(), os.Getenv("ROLE_HOST"))
-	peer_cpu := components.NewCpu(ipAddress, node.ID().Pretty())
-	peer_ram := components.NewRam(ipAddress, node.ID().Pretty())
-	peer_tcp := components.NewTCPstatus(ipAddress)
-
-	//send timestamp on a separated thread
-	go service.SendPeerInfo(timeTopic, context, peer_sys, &discovery.PeerList)
+	//send Peer-System-Information
+	go sender.SendPeerInfo(systemTopic, context, &discovery.PeerList)
 	//send CPU information on a separated thread
-	go service.SendCpuInfo(cpuTopic, context, peer_cpu, &discovery.PeerList)
+	go sender.SendCpuInfo(cpuTopic, context, &discovery.PeerList)
 	//send RAM information on a separated thread
-	go service.SendRamInfo(ramTopic, context, peer_ram, &discovery.PeerList)
+	go sender.SendRamInfo(ramTopic, context, &discovery.PeerList)
 	//send tcp status on a separated thread
-	go service.SendTCPstatus(tcpTopic, context, peer_tcp, &discovery.PeerList)
+	go sender.SendTCPstatus(tcpTopic, context, &discovery.PeerList)
 
 	//Run the program till its stopped (forced)
 	ch := make(chan os.Signal, 1)

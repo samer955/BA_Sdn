@@ -8,32 +8,45 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
-	"libp2p-sender/components"
+	"libp2p-sender/metrics"
 	"libp2p-sender/subscriber"
+	"os"
 	"time"
 )
 
+type Sender struct {
+	node host.Host
+	ip   string
+}
+
+func NewSenderService(node host.Host, ip string) *Sender {
+	return &Sender{
+		node: node,
+		ip:   ip}
+}
+
 //SendPeerInfo will send system Information of this Peer and periodically a timestamp
 //in order to calculate the latency in ms between service and service
-func SendPeerInfo(topic *pubsub.Topic, context context.Context, peer *components.PeerInfo, list *[]peer.AddrInfo) {
+func (s *Sender) SendPeerInfo(topic *pubsub.Topic, context context.Context, list *[]peer.AddrInfo) {
+	peer_sys := metrics.NewPeerInfo(s.ip, s.node.ID(), os.Getenv("ROLE_HOST"))
 	for {
 		if len(*list) == 0 {
 			continue
 		}
-		sendPeerInfo(topic, context, peer)
+		sendPeerInfo(topic, context, peer_sys)
 
 		//wait 20 seconds before send another timestamp
 		time.Sleep(20 * time.Second)
 	}
 }
 
-func sendPeerInfo(topic *pubsub.Topic, context context.Context, peer *components.PeerInfo) {
+func sendPeerInfo(topic *pubsub.Topic, context context.Context, peer *metrics.PeerInfo) {
 	fmt.Println("sending time")
 
 	//Set the time when the message is sent
 	peer.UUID = uuid.New().String()
-	peer.OnlineUser = components.GetNumberOfOnlineUser()
-	peer.Time = components.TimeFromServer()
+	peer.OnlineUser = metrics.GetNumberOfOnlineUser()
+	peer.Time = metrics.TimeFromServer()
 
 	err := subscriber.Publish(peer, context, topic)
 	if err != nil {
@@ -42,7 +55,8 @@ func sendPeerInfo(topic *pubsub.Topic, context context.Context, peer *components
 }
 
 // SendCpuInfo function will send periodically information about the CPU
-func SendCpuInfo(topic *pubsub.Topic, context context.Context, cpu *components.Cpu, peers *[]peer.AddrInfo) {
+func (s *Sender) SendCpuInfo(topic *pubsub.Topic, context context.Context, peers *[]peer.AddrInfo) {
+	cpu := metrics.NewCpu(s.ip, s.node.ID().Pretty())
 	for {
 		if len(*peers) == 0 {
 			continue
@@ -53,7 +67,7 @@ func SendCpuInfo(topic *pubsub.Topic, context context.Context, cpu *components.C
 	}
 }
 
-func sendCpuInfo(topic *pubsub.Topic, context context.Context, cpu *components.Cpu) {
+func sendCpuInfo(topic *pubsub.Topic, context context.Context, cpu *metrics.Cpu) {
 	fmt.Println("sending cpu")
 
 	cpu.UUID = uuid.New().String()
@@ -69,7 +83,8 @@ func sendCpuInfo(topic *pubsub.Topic, context context.Context, cpu *components.C
 }
 
 // SendRamInfo function will send periodically information about the actual RAM Percentage
-func SendRamInfo(topic *pubsub.Topic, context context.Context, ram *components.Ram, peers *[]peer.AddrInfo) {
+func (s *Sender) SendRamInfo(topic *pubsub.Topic, context context.Context, peers *[]peer.AddrInfo) {
+	ram := metrics.NewRam(s.ip, s.node.ID().Pretty())
 	for {
 		if len(*peers) == 0 {
 			continue
@@ -79,7 +94,7 @@ func SendRamInfo(topic *pubsub.Topic, context context.Context, ram *components.R
 	}
 }
 
-func sendRamInfo(topic *pubsub.Topic, context context.Context, ram *components.Ram) {
+func sendRamInfo(topic *pubsub.Topic, context context.Context, ram *metrics.Ram) {
 	fmt.Println("sending ram")
 
 	ram.UUID = uuid.New().String()
@@ -100,7 +115,7 @@ func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *
 
 	var pingDeadline = 10
 
-	status := components.NewPingStatus(host.ID().Pretty(), target.ID.Pretty())
+	status := metrics.NewPingStatus(host.ID().Pretty(), target.ID.Pretty())
 	//The Ping function return a channel that still open till the context is alive
 	ch := ping.Ping(ctx, host, target.ID)
 
@@ -122,26 +137,27 @@ func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *
 	}
 }
 
-func SendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *components.TCPstatus, peers *[]peer.AddrInfo) {
+func (s *Sender) SendTCPstatus(topic *pubsub.Topic, context context.Context, peers *[]peer.AddrInfo) {
+	tcp := metrics.NewTCPstatus(s.ip)
 	for {
 		if len(*peers) == 0 {
 			continue
 		}
-		sendTCPstatus(topic, context, tcpIfo)
+		sendTCPstatus(topic, context, tcp)
 		time.Sleep(15 * time.Second)
 	}
 }
 
-func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *components.TCPstatus) {
+func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *metrics.TCPstatus) {
 	fmt.Println("sending tcp Queue size")
 
 	tcpIfo.UUID = uuid.New().String()
-	tcpIfo.QueueSize = components.TcpQueueSize()
-	received, sent := components.TcpSegmentsNumber()
+	tcpIfo.QueueSize = metrics.TcpQueueSize()
+	received, sent := metrics.TcpSegmentsNumber()
 
 	tcpIfo.Received = received
 	tcpIfo.Sent = sent
-	tcpIfo.Time = components.TimeFromServer()
+	tcpIfo.Time = metrics.TimeFromServer()
 
 	err := subscriber.Publish(tcpIfo, context, topic)
 	if err != nil {
