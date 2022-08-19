@@ -27,8 +27,8 @@ func (r *PostGresRepo) Migrate() {
 }
 
 func (r *PostGresRepo) SaveSystemMessage(peer *variables.PeerInfo, now time.Time, latency int64) {
-	_, err := r.db.Exec("INSERT INTO peer(node_id,uuid,hostname,ip,latency,platform,version,os,online_user,time) "+
-		"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+	_, err := r.db.Exec("INSERT INTO peer(node_id,uuid,hostname,ip,latency,platform,version,os,online_user,time,role) "+
+		"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
 		peer.Id.Pretty(),
 		peer.UUID,
 		peer.Hostname,
@@ -38,7 +38,8 @@ func (r *PostGresRepo) SaveSystemMessage(peer *variables.PeerInfo, now time.Time
 		peer.Version,
 		peer.OS,
 		peer.OnlineUser,
-		now)
+		now,
+		peer.Role)
 
 	if err != nil {
 		panic(err)

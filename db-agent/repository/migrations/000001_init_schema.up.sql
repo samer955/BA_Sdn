@@ -11,7 +11,8 @@ create table peer
     latency     integer,
     time        timestamp with time zone,
     node_id     text,
-    online_user integer
+    online_user integer,
+    role        text
 );
 
 alter table peer
@@ -84,7 +85,8 @@ create table tcp
     ip         text,
     queue_size integer,
     received   integer,
-    sent       integer
+    sent       integer,
+    time       timestamp with time zone
 );
 
 alter table tcp
@@ -92,4 +94,25 @@ alter table tcp
 
 create unique index tcp_uuid_uindex
     on tcp (uuid);
+
+create table throughput
+(
+    uuid      text not null
+        constraint throughput_pk
+            primary key,
+    node_id   text,
+    total_in  bigint,
+    total_out bigint,
+    rate_in   integer,
+    rate_out  integer,
+    ip        text,
+    hostname  text,
+    time      timestamp with time zone
+);
+
+alter table throughput
+    owner to "user";
+
+create unique index throughput_uuid_uindex
+    on throughput (uuid);
 

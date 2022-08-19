@@ -13,6 +13,7 @@ type PeerInfo struct {
 	OS         string    `json:"os"`
 	Platform   string    `json:"platform"`
 	Version    string    `json:"version"`
+	Role       string    `json:"role"`
 	Time       time.Time `json:"time"`
 	OnlineUser int       `json:"online_user"`
 }

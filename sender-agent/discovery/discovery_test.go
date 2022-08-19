@@ -6,7 +6,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	"github.com/stretchr/testify/assert"
-	"libp2p-sender/subscriber"
+	"sender-agent/subscriber"
 	"testing"
 )
 

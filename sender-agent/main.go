@@ -3,28 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
-	"libp2p-sender/discovery"
-	"libp2p-sender/service"
-	"libp2p-sender/subscriber"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+	"sender-agent/discovery"
+	"sender-agent/service"
+	"sender-agent/subscriber"
 	"syscall"
 	"time"
 )
 
 func main() {
-
-	err := godotenv.Load(".env")
-
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
 
 	const (
 		discoveryName = "discoveryRoom"

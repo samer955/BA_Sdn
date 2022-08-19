@@ -1,4 +1,4 @@
-module libp2p-sender
+module sender-agent
 
 go 1.18
 

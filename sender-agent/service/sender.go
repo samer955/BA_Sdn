@@ -8,9 +8,9 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
-	"libp2p-sender/metrics"
-	"libp2p-sender/subscriber"
 	"os"
+	"sender-agent/metrics"
+	"sender-agent/subscriber"
 	"time"
 )
 

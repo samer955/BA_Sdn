@@ -49,13 +49,13 @@ func main() {
 		fmt.Println("Successfully connected!")
 	}
 
+	node := createHost()
+	context := context.Background()
+
 	//initialize Repository and DataColector
 	repo := repository.NewPostGresRepository(db)
 	repo.Migrate()
 	collector := service.NewDataCollectorService(BandCounter, repo)
-	context := context.Background()
-
-	node := createHost()
 
 	//create a new PubSub Service using the GossipSub router
 	pubsub := subscriber.NewPubSubService(context, node)
