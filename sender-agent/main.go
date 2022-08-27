@@ -30,6 +30,7 @@ func main() {
 		roomCpu       = "cpu"
 		roomRam       = "ram"
 		roomTcp       = "tcp"
+		roomBand      = "Bandwidth"
 	)
 
 	context := context.Background()
@@ -40,7 +41,7 @@ func main() {
 	pubsub := subscriber.NewPubSubService(context, node)
 
 	systemTopic := pubsub.JoinTopic(roomSystem)
-	_ = pubsub.Subscribe(systemTopic)
+	systemSubscr := pubsub.Subscribe(systemTopic)
 
 	pingTopic := pubsub.JoinTopic(roomPing)
 	_ = pubsub.Subscribe(pingTopic)
@@ -56,10 +57,13 @@ func main() {
 	tcpTopic := pubsub.JoinTopic(roomTcp)
 	_ = pubsub.Subscribe(tcpTopic)
 
+	bandTopic := pubsub.JoinTopic(roomBand)
+	_ = pubsub.Subscribe(bandTopic)
+
 	// setup local mDNS discovery
 	discovery.SetupDiscovery(node, discoveryName)
 
-	sender := service.NewSenderService(node, GetLocalIP())
+	sender := service.NewSenderService(node, GetLocalIP(), BandCounter)
 
 	//send Peer-System-Information
 	go sender.SendPeerInfo(systemTopic, context, &discovery.PeerList)
@@ -69,6 +73,8 @@ func main() {
 	go sender.SendRamInfo(ramTopic, context, &discovery.PeerList)
 	//send tcp status on a separated thread
 	go sender.SendTCPstatus(tcpTopic, context, &discovery.PeerList)
+
+	go sender.GetBandWidthForActivePeer(systemSubscr, context, bandTopic)
 
 	//Run the program till its stopped (forced)
 	ch := make(chan os.Signal, 1)
