@@ -1,9 +1,9 @@
 package metrics
 
 import (
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
+	"log"
 	"time"
 )
 
@@ -29,11 +29,11 @@ func (status *PingStatus) SetPingStatus(res ping.Result, deadline *int) {
 	if res.Error == nil {
 		status.Alive = true
 		status.RTT = res.RTT.Milliseconds()
-		fmt.Println("pinged", status.Target, "in", res.RTT)
+		log.Println("pinged", status.Target, "in", res.RTT)
 	} else {
 		status.Alive = false
 		status.RTT = 0
-		fmt.Println("pinged", status.Target, "without success", res.Error)
+		log.Println("pinged", status.Target, "without success", res.Error)
 		*deadline--
 	}
 	status.Time = TimeFromServer()

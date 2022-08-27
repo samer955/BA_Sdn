@@ -33,22 +33,20 @@ func NewSenderService(node host.Host, ip string, counter *metrics2.BandwidthCoun
 //SendPeerInfo will send system Information of this Peer and periodically a timestamp
 //in order to calculate the latency in ms between service and service
 func (s *Sender) SendPeerInfo(topic *pubsub.Topic, context context.Context, list *[]peer.AddrInfo) {
-	peer_sys := metrics.NewPeerInfo(s.ip, s.node.ID(), os.Getenv("ROLE_HOST"))
+	peerSys := metrics.NewPeerInfo(s.ip, s.node.ID(), os.Getenv("ROLE_HOST"))
 	for {
 		if len(*list) == 0 {
 			continue
 		}
-		sendPeerInfo(topic, context, peer_sys)
+		sendPeerInfo(topic, context, peerSys)
 
-		//wait 20 seconds before send another timestamp
-		time.Sleep(20 * time.Second)
+		//wait 30 seconds before send another systeminfo
+		time.Sleep(30 * time.Second)
 	}
 }
 
 func sendPeerInfo(topic *pubsub.Topic, context context.Context, peer *metrics.PeerInfo) {
-	fmt.Println("sending time")
 
-	//Set the time when the message is sent
 	peer.UUID = uuid.New().String()
 	peer.OnlineUser = metrics.GetNumberOfOnlineUser()
 	peer.Time = metrics.TimeFromServer()
@@ -57,6 +55,7 @@ func sendPeerInfo(topic *pubsub.Topic, context context.Context, peer *metrics.Pe
 	if err != nil {
 		fmt.Println("Error publishing content ", err.Error())
 	}
+	log.Println("sending system info...")
 }
 
 // SendCpuInfo function will send periodically information about the CPU
@@ -68,15 +67,14 @@ func (s *Sender) SendCpuInfo(topic *pubsub.Topic, context context.Context, peers
 		}
 		sendCpuInfo(topic, context, cpu)
 
-		time.Sleep(15 * time.Second)
+		time.Sleep(30 * time.Second)
 	}
 }
 
 func sendCpuInfo(topic *pubsub.Topic, context context.Context, cpu *metrics.Cpu) {
-	fmt.Println("sending cpu")
 
 	cpu.UUID = uuid.New().String()
-	//Update every 10s CPU Usages in %
+	//Update CPU % Usages
 	cpu.UpdateCpuPercentage()
 
 	//publish the cpu data
@@ -85,6 +83,7 @@ func sendCpuInfo(topic *pubsub.Topic, context context.Context, cpu *metrics.Cpu)
 	if err != nil {
 		fmt.Println("Error publishing content ", err.Error())
 	}
+	log.Println("sending cpu...")
 }
 
 // SendRamInfo function will send periodically information about the actual RAM Percentage
@@ -95,22 +94,22 @@ func (s *Sender) SendRamInfo(topic *pubsub.Topic, context context.Context, peers
 			continue
 		}
 		sendRamInfo(topic, context, ram)
-		time.Sleep(5 * time.Second)
+		time.Sleep(30 * time.Second)
 	}
 }
 
 func sendRamInfo(topic *pubsub.Topic, context context.Context, ram *metrics.Ram) {
-	fmt.Println("sending ram")
 
 	ram.UUID = uuid.New().String()
-	//Update every 10s RAM usages in %
+	//Update RAM % Usage
 	ram.UpdateRamPercentage()
 
 	//publish the ram data
 	err := subscriber.Publish(ram, context, topic)
 	if err != nil {
-		fmt.Println("Error publishing content ", err.Error())
+		log.Println("Error publishing content ", err.Error())
 	}
+	log.Println("sending ram...")
 }
 
 //SendPing function send a Ping every 60s to the discovered Peer
@@ -127,7 +126,7 @@ func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *
 	for {
 		//after 10 negative Ping stop to ping the Peer
 		if pingDeadline == 0 {
-			fmt.Printf("Stopped ping from %s to %s\n", status.Source, status.Target)
+			log.Printf("Stopped ping from %s to %s\n", status.Source, status.Target)
 			return
 		}
 		res := <-ch
@@ -137,8 +136,8 @@ func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *
 		//publish the status of the Ping in the topic
 		subscriber.Publish(status, ctx, topic)
 
-		//Next Ping in 1 Min
-		time.Sleep(5 * time.Second)
+		//Next Ping in 45s
+		time.Sleep(45 * time.Second)
 	}
 }
 
@@ -149,12 +148,11 @@ func (s *Sender) SendTCPstatus(topic *pubsub.Topic, context context.Context, pee
 			continue
 		}
 		sendTCPstatus(topic, context, tcp)
-		time.Sleep(15 * time.Second)
+		time.Sleep(30 * time.Second)
 	}
 }
 
 func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *metrics.TCPstatus) {
-	fmt.Println("sending tcp Queue size")
 
 	tcpIfo.UUID = uuid.New().String()
 	tcpIfo.QueueSize = metrics.TcpQueueSize()
@@ -166,8 +164,9 @@ func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *metrics
 
 	err := subscriber.Publish(tcpIfo, context, topic)
 	if err != nil {
-		fmt.Println("Error publishing content ", err.Error())
+		log.Println("Error publishing content ", err.Error())
 	}
+	log.Println("sending TCP-info...")
 }
 
 // GetBandWidthForActivePeer listens on the sytemtopic to get the information about an online Peer in order to calculate
@@ -203,7 +202,7 @@ func (s *Sender) getBandwidth(peer *metrics.PeerInfo, topic *pubsub.Topic, ctx c
 
 	err := subscriber.Publish(bandwidth, ctx, topic)
 	if err != nil {
-		fmt.Println("Error publishing content ", err.Error())
+		log.Println("Error publishing content ", err.Error())
 	}
-	fmt.Println("sending bandwidth...")
+	log.Println("sending Bandwidth...")
 }
