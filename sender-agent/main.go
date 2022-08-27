@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -14,6 +15,7 @@ import (
 	"sender-agent/discovery"
 	"sender-agent/service"
 	"sender-agent/subscriber"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -22,6 +24,18 @@ import (
 var BandCounter *metrics.BandwidthCounter
 
 func main() {
+
+	err := godotenv.Load("sender.env")
+
+	if err != nil {
+		log.Println("Error loading sender.env file")
+	}
+
+	//set frequency of metrics sent from .env file, if an error occurs set this to 60s
+	sendFrequency, err := strconv.Atoi(os.Getenv("SEND_FREQUENCY"))
+	if err != nil {
+		sendFrequency = 60
+	}
 
 	const (
 		discoveryName = "discoveryRoom"
@@ -40,6 +54,7 @@ func main() {
 	//return a new pubsub Service using the GossipSub router
 	pubsub := subscriber.NewPubSubService(context, node)
 
+	//Join and Subscribe on different topics
 	systemTopic := pubsub.JoinTopic(roomSystem)
 	systemSubscr := pubsub.Subscribe(systemTopic)
 
@@ -63,7 +78,7 @@ func main() {
 	// setup local mDNS discovery
 	discovery.SetupDiscovery(node, discoveryName)
 
-	sender := service.NewSenderService(node, GetLocalIP(), BandCounter)
+	sender := service.NewSenderService(node, GetLocalIP(), BandCounter, sendFrequency)
 
 	//send Peer-System-Information
 	go sender.SendPeerInfo(systemTopic, context, &discovery.PeerList)

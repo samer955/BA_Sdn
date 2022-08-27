@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/host"
 	metrics2 "github.com/libp2p/go-libp2p-core/metrics"
@@ -17,16 +18,19 @@ import (
 )
 
 type Sender struct {
-	node    host.Host
-	ip      string
-	counter *metrics2.BandwidthCounter
+	node      host.Host
+	ip        string
+	counter   *metrics2.BandwidthCounter
+	frequency int
 }
 
-func NewSenderService(node host.Host, ip string, counter *metrics2.BandwidthCounter) *Sender {
+func NewSenderService(node host.Host, ip string, counter *metrics2.BandwidthCounter, frequency int) *Sender {
+	fmt.Println(frequency)
 	return &Sender{
-		node:    node,
-		ip:      ip,
-		counter: counter}
+		node:      node,
+		ip:        ip,
+		counter:   counter,
+		frequency: frequency}
 }
 
 //SendPeerInfo will send system Information of this Peer and periodically a timestamp
@@ -40,7 +44,7 @@ func (s *Sender) SendPeerInfo(topic *pubsub.Topic, context context.Context, list
 		sendPeerInfo(topic, context, peerSys)
 
 		//wait 30 seconds before send another systeminfo
-		time.Sleep(30 * time.Second)
+		time.Sleep(time.Duration(s.frequency) * time.Second)
 	}
 }
 
@@ -66,7 +70,7 @@ func (s *Sender) SendCpuInfo(topic *pubsub.Topic, context context.Context, peers
 		}
 		sendCpuInfo(topic, context, cpu)
 
-		time.Sleep(30 * time.Second)
+		time.Sleep(time.Duration(s.frequency) * time.Second)
 	}
 }
 
@@ -93,7 +97,7 @@ func (s *Sender) SendRamInfo(topic *pubsub.Topic, context context.Context, peers
 			continue
 		}
 		sendRamInfo(topic, context, ram)
-		time.Sleep(30 * time.Second)
+		time.Sleep(time.Duration(s.frequency) * time.Second)
 	}
 }
 
@@ -150,7 +154,7 @@ func (s *Sender) SendTCPstatus(topic *pubsub.Topic, context context.Context, pee
 			continue
 		}
 		sendTCPstatus(topic, context, tcp)
-		time.Sleep(30 * time.Second)
+		time.Sleep(time.Duration(s.frequency) * time.Second)
 	}
 }
 
