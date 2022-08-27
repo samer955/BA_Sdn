@@ -30,7 +30,7 @@ func main() {
 		roomCpu       = "cpu"
 		roomRam       = "ram"
 		roomTcp       = "tcp"
-		roomBand      = "Bandwidth"
+		roomBand      = "bandwidth"
 	)
 
 	context := context.Background()
