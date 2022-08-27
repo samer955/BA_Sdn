@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/host"
 	metrics2 "github.com/libp2p/go-libp2p-core/metrics"
@@ -25,7 +24,6 @@ type Sender struct {
 }
 
 func NewSenderService(node host.Host, ip string, counter *metrics2.BandwidthCounter, frequency int) *Sender {
-	fmt.Println(frequency)
 	return &Sender{
 		node:      node,
 		ip:        ip,
@@ -43,7 +41,7 @@ func (s *Sender) SendPeerInfo(topic *pubsub.Topic, context context.Context, list
 		}
 		sendPeerInfo(topic, context, peerSys)
 
-		//wait 30 seconds before send another systeminfo
+		//wait some time defined in the frequency before send another systeminfo
 		time.Sleep(time.Duration(s.frequency) * time.Second)
 	}
 }
@@ -175,7 +173,7 @@ func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *metrics
 	log.Println("sending TCP-info...")
 }
 
-// GetBandWidthForActivePeer listens on the sytemtopic to get the information about an online Peer in order to calculate
+// GetBandWidthForActivePeer listens on the sytemtopic to get the information about an online Peer in order to get
 //the Bandwidth between them
 func (s *Sender) GetBandWidthForActivePeer(subscribe *pubsub.Subscription, context context.Context, topic *pubsub.Topic) {
 	for {

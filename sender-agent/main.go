@@ -88,7 +88,7 @@ func main() {
 	go sender.SendRamInfo(ramTopic, context, &discovery.PeerList)
 	//send tcp status on a separated thread
 	go sender.SendTCPstatus(tcpTopic, context, &discovery.PeerList)
-
+	//Get Bandwidth between local Peer and other connected Peers on a separated thread
 	go sender.GetBandWidthForActivePeer(systemSubscr, context, bandTopic)
 
 	//Run the program till its stopped (forced)
