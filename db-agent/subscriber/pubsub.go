@@ -28,10 +28,9 @@ func (service *PubSubService) JoinTopic(room string) *pubsub.Topic {
 
 	topic, err := service.psub.Join(room)
 	if err != nil {
-		log.Println("Error while subscribing in the Time-Topic")
+		log.Println("Error while subscribing in", room)
 	} else {
-		log.Println("Subscribed on", room)
-		log.Println("topicID", topic.String())
+		log.Println("Joined room:", room)
 	}
 	return topic
 }
@@ -44,7 +43,7 @@ func (service *PubSubService) Subscribe(topic *pubsub.Topic) *pubsub.Subscriptio
 	if (err) != nil {
 		log.Println("cannot subscribe to: ", topic.String())
 	} else {
-		log.Println("Subscribed to, " + subscribe.Topic())
+		log.Println("Subscribed to topic: " + subscribe.Topic())
 	}
 	return subscribe
 }
