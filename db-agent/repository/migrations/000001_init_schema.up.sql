@@ -1,4 +1,4 @@
-create table peer
+create table if not exists peer
 (
     uuid        text not null
         constraint peer_pk
@@ -21,7 +21,7 @@ alter table peer
 create unique index peer_uuid_uindex
     on peer (uuid);
 
-create table status
+create table if not exists status
 (
     uuid     text not null
         constraint status_pk
@@ -39,7 +39,7 @@ alter table status
 create unique index status_uuid_uindex
     on status (uuid);
 
-create table ram
+create table if not exists ram
 (
     uuid     text not null
         constraint ram_pk
@@ -57,7 +57,7 @@ alter table ram
 create unique index ram_uuid_uindex
     on ram (uuid);
 
-create table cpu
+create table if not exists cpu
 (
     uuid     text not null
         constraint cpu_pk
@@ -76,7 +76,7 @@ alter table cpu
 create unique index cpu_uuid_uindex
     on cpu (uuid);
 
-create table tcp
+create table if not exists tcp
 (
     uuid       text not null
         constraint tcp_pk
@@ -95,24 +95,23 @@ alter table tcp
 create unique index tcp_uuid_uindex
     on tcp (uuid);
 
-create table throughput
+create table if not exists bandwidth
 (
     uuid      text not null
-        constraint throughput_pk
+        constraint bandwidth_pk
             primary key,
-    node_id   text,
+    id        text,
+    source    text,
+    target    text,
     total_in  bigint,
     total_out bigint,
     rate_in   integer,
     rate_out  integer,
-    ip        text,
-    hostname  text,
     time      timestamp with time zone
 );
 
-alter table throughput
+alter table bandwidth
     owner to "user";
 
-create unique index throughput_uuid_uindex
-    on throughput (uuid);
-
+create unique index bandwidth_uuid_uindex
+    on bandwidth (uuid);
