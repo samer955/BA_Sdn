@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/host"
+	metrics2 "github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
+	"log"
 	"os"
 	"sender-agent/metrics"
 	"sender-agent/subscriber"
@@ -15,14 +18,16 @@ import (
 )
 
 type Sender struct {
-	node host.Host
-	ip   string
+	node    host.Host
+	ip      string
+	counter *metrics2.BandwidthCounter
 }
 
-func NewSenderService(node host.Host, ip string) *Sender {
+func NewSenderService(node host.Host, ip string, counter *metrics2.BandwidthCounter) *Sender {
 	return &Sender{
-		node: node,
-		ip:   ip}
+		node:    node,
+		ip:      ip,
+		counter: counter}
 }
 
 //SendPeerInfo will send system Information of this Peer and periodically a timestamp
@@ -163,4 +168,42 @@ func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *metrics
 	if err != nil {
 		fmt.Println("Error publishing content ", err.Error())
 	}
+}
+
+// GetBandWidthForActivePeer listens on the sytemtopic to get the information about an online Peer in order to calculate
+//the Bandwidth between them
+func (s *Sender) GetBandWidthForActivePeer(subscribe *pubsub.Subscription, context context.Context, topic *pubsub.Topic) {
+	for {
+		message, err := subscribe.Next(context)
+		if err != nil {
+			log.Println("cannot read from topic")
+		} else {
+			if message.ReceivedFrom.String() != s.node.ID().Pretty() {
+				peer := new(metrics.PeerInfo)
+				json.Unmarshal(message.Data, peer)
+				s.getBandwidth(peer, topic, context)
+			}
+		}
+	}
+}
+
+func (s *Sender) getBandwidth(peer *metrics.PeerInfo, topic *pubsub.Topic, ctx context.Context) {
+
+	bandwidth := metrics.NewBandWidth(s.ip, s.node.ID().Pretty())
+
+	resultBand := s.counter.GetBandwidthForPeer(peer.Id)
+
+	bandwidth.Target = peer.Ip
+	bandwidth.TotalIn = resultBand.TotalIn
+	bandwidth.TotalOut = resultBand.TotalOut
+	bandwidth.RateIn = int(resultBand.RateIn)
+	bandwidth.RateOut = int(resultBand.RateOut)
+	bandwidth.Time = peer.Time
+	bandwidth.UUID = uuid.New().String()
+
+	err := subscriber.Publish(bandwidth, ctx, topic)
+	if err != nil {
+		fmt.Println("Error publishing content ", err.Error())
+	}
+	fmt.Println("sending bandwidth...")
 }
