@@ -29,12 +29,13 @@ func (status *PingStatus) SetPingStatus(res ping.Result, deadline *int) {
 	if res.Error == nil {
 		status.Alive = true
 		status.RTT = res.RTT.Milliseconds()
+		*deadline = 0
 		log.Println("pinged", status.Target, "in", res.RTT)
 	} else {
 		status.Alive = false
 		status.RTT = 0
 		log.Println("pinged", status.Target, "without success", res.Error)
-		*deadline--
+		*deadline++
 	}
 	status.Time = TimeFromServer()
 	status.UUID = uuid.New().String()

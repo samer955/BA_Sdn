@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/host"
 	metrics2 "github.com/libp2p/go-libp2p-core/metrics"
@@ -53,7 +52,7 @@ func sendPeerInfo(topic *pubsub.Topic, context context.Context, peer *metrics.Pe
 
 	err := subscriber.Publish(peer, context, topic)
 	if err != nil {
-		fmt.Println("Error publishing content ", err.Error())
+		log.Println("Error publishing content ", err.Error())
 	}
 	log.Println("sending system info...")
 }
@@ -81,7 +80,7 @@ func sendCpuInfo(topic *pubsub.Topic, context context.Context, cpu *metrics.Cpu)
 	err := subscriber.Publish(cpu, context, topic)
 
 	if err != nil {
-		fmt.Println("Error publishing content ", err.Error())
+		log.Println("Error publishing content ", err.Error())
 	}
 	log.Println("sending cpu...")
 }
@@ -117,7 +116,8 @@ func sendRamInfo(topic *pubsub.Topic, context context.Context, ram *metrics.Ram)
 //a bool if the ping was successfully (true if a node is reachable, false if not) and an RTT in ms
 func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *pubsub.Topic) {
 
-	var pingDeadline = 10
+	var pingDeadlineLimit = 10
+	var actualNegativePing = 0
 
 	status := metrics.NewPingStatus(host.ID().Pretty(), target.ID.Pretty())
 	//The Ping function return a channel that still open till the context is alive
@@ -125,17 +125,19 @@ func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *
 
 	for {
 		//after 10 negative Ping stop to ping the Peer
-		if pingDeadline == 0 {
+		if actualNegativePing == pingDeadlineLimit {
 			log.Printf("Stopped ping from %s to %s\n", status.Source, status.Target)
 			return
 		}
 		res := <-ch
 
-		status.SetPingStatus(res, &pingDeadline)
+		status.SetPingStatus(res, &actualNegativePing)
 
 		//publish the status of the Ping in the topic
-		subscriber.Publish(status, ctx, topic)
-
+		err := subscriber.Publish(status, ctx, topic)
+		if err != nil {
+			log.Println("Error publishing content ", err.Error())
+		}
 		//Next Ping in 45s
 		time.Sleep(45 * time.Second)
 	}
