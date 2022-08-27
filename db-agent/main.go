@@ -8,9 +8,11 @@ import (
 	"db-agent/service"
 	"db-agent/subscriber"
 	"fmt"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -27,18 +29,19 @@ func main() {
 		roomPing     = "ping"
 		roomTcp      = "tcp"
 		roomBand     = "bandwidth"
-		host         = "localhost"
-		port         = 5432
-		user         = "user"
-		password     = "password"
-		dbname       = "database"
 	)
 
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+	err := godotenv.Load("db.env")
 
-	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		log.Println("Error loading db.env file")
+	}
+
+	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+
+	db, err := sql.Open(os.Getenv("DB_DRIVER"), psqlInfo)
 
 	if err != nil {
 		panic(err)
@@ -49,7 +52,7 @@ func main() {
 	node := createHost()
 	context := context.Background()
 
-	//initialize Repository and DataColector
+	//initialize Repository and DataCollector
 	repo := repository.NewPostGresRepository(db)
 	repo.Migrate()
 	collector := service.NewDataCollectorService(node, repo)

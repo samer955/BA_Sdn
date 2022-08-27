@@ -12,5 +12,5 @@ type Repository interface {
 	SaveCpuIfo(cpu *variables.Cpu)
 	SavePingStatus(status *variables.PingStatus)
 	SaveTCPstatus(tcpStatus *variables.TCPstatus)
-	SaveThroughput(data *variables.IOData)
+	SaveBandwidth(data *variables.Bandwidth)
 }
