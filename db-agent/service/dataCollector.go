@@ -34,9 +34,9 @@ func (collector *dataCollector) ReadSystemInfo(subscribe *pubsub.Subscription, c
 				log.Println("cannot read from topic")
 			} else {
 				if message.ReceivedFrom.String() != collector.node.ID().Pretty() {
+					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
 					peer := new(variables.PeerInfo)
-
 					//Unmarshal the file into the peer struct
 					json.Unmarshal(message.Data, peer)
 
@@ -51,8 +51,6 @@ func (collector *dataCollector) ReadSystemInfo(subscribe *pubsub.Subscription, c
 
 					//Here we store latency of the peer in the database as well as system information
 					collector.repository.SaveSystemMessage(peer, now, latency)
-
-					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
 			}
 		}()
@@ -68,6 +66,7 @@ func (collector *dataCollector) ReadRamInformation(subscribe *pubsub.Subscriptio
 				log.Println("cannot read from topic")
 			} else {
 				if message.ReceivedFrom.String() != collector.node.ID().Pretty() {
+					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
 					ram := new(variables.Ram)
 
@@ -77,8 +76,6 @@ func (collector *dataCollector) ReadRamInformation(subscribe *pubsub.Subscriptio
 					//Here we store cpu usage percentage of the peer in the database as well
 					//as node_id, ip_address to identify the peer
 					collector.repository.SaveRamInfo(ram)
-
-					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
 			}
 		}()
@@ -94,6 +91,7 @@ func (collector *dataCollector) ReadCpuInformation(subscribe *pubsub.Subscriptio
 				log.Println("cannot read from topic")
 			} else {
 				if message.ReceivedFrom.String() != collector.node.ID().Pretty() {
+					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
 					cpu := new(variables.Cpu)
 
@@ -103,8 +101,6 @@ func (collector *dataCollector) ReadCpuInformation(subscribe *pubsub.Subscriptio
 					//Here we store cpu usage percentage of the peer in the database as well
 					//as node_id, ip_address to identify the peer
 					collector.repository.SaveCpuIfo(cpu)
-
-					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
 			}
 		}()
@@ -120,13 +116,13 @@ func (collector *dataCollector) ReadPingStatus(subscribe *pubsub.Subscription, c
 				log.Println("cannot read from topic")
 			} else {
 				if message.ReceivedFrom.String() != collector.node.ID().Pretty() {
+					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
 					status := new(variables.PingStatus)
 					//parse the JSON-encoded data and store the result into cpu
 					json.Unmarshal(message.Data, status)
 
 					collector.repository.SavePingStatus(status)
-					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
 			}
 		}()
@@ -142,13 +138,13 @@ func (collector *dataCollector) ReadTCPstatus(subscribe *pubsub.Subscription, ct
 				log.Println("cannot read from topic")
 			} else {
 				if message.ReceivedFrom.String() != collector.node.ID().Pretty() {
+					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
 					tcpStat := new(variables.TCPstatus)
 					//parse the JSON-encoded data and store the result into cpu
 					json.Unmarshal(message.Data, tcpStat)
 
 					collector.repository.SaveTCPstatus(tcpStat)
-					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
 			}
 		}()
