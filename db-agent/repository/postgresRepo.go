@@ -112,18 +112,18 @@ func (r *PostGresRepo) SaveTCPstatus(tcpStatus *variables.TCPstatus) {
 	}
 }
 
-func (r *PostGresRepo) SaveThroughput(data *variables.IOData) {
-	_, err := r.db.Exec("INSERT INTO throughput(uuid,node_id,ip,total_in,total_out,rate_in,rate_out,hostname,time) "+
+func (r *PostGresRepo) SaveBandwidth(band *variables.Bandwidth) {
+	_, err := r.db.Exec("INSERT INTO bandwidth(uuid,id,source,target,total_in,total_out,rate_in,rate_out,time) "+
 		"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
-		data.UUID,
-		data.NodeID,
-		data.Ip,
-		data.TotalIn,
-		data.TotalOut,
-		data.RateIn,
-		data.RateOut,
-		data.Hostname,
-		data.Time)
+		band.UUID,
+		band.Id,
+		band.Source,
+		band.Target,
+		band.TotalIn,
+		band.TotalOut,
+		band.RateIn,
+		band.RateOut,
+		band.Time)
 
 	if err != nil {
 		panic(err)

@@ -11,15 +11,11 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/metrics"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 )
-
-// BandwidthCounter tracks incoming and outgoing data transferred by the local peer.
-var BandCounter *metrics.BandwidthCounter
 
 func main() {
 
@@ -30,6 +26,7 @@ func main() {
 		roomRam      = "ram"
 		roomPing     = "ping"
 		roomTcp      = "tcp"
+		roomBand     = "bandwidth"
 		host         = "localhost"
 		port         = 5432
 		user         = "user"
@@ -55,7 +52,7 @@ func main() {
 	//initialize Repository and DataColector
 	repo := repository.NewPostGresRepository(db)
 	repo.Migrate()
-	collector := service.NewDataCollectorService(BandCounter, repo)
+	collector := service.NewDataCollectorService(node, repo)
 
 	//create a new PubSub Service using the GossipSub router
 	pubsub := subscriber.NewPubSubService(context, node)
@@ -75,19 +72,24 @@ func main() {
 	ramTopic := pubsub.JoinTopic(roomRam)
 	ramSubscribe := pubsub.Subscribe(ramTopic)
 
+	bandTopic := pubsub.JoinTopic(roomBand)
+	bandSubscribe := pubsub.Subscribe(bandTopic)
+
 	// setup local mDNS discovery
 	discovery.SetupDiscovery(node, discoveryTag)
 
 	//read System Information of peers in a separated thread
-	go collector.ReadSystemInfo(systemSubscribe, context, node)
+	go collector.ReadSystemInfo(systemSubscribe, context)
 	//read cpu information of peers in a separated thread
-	go collector.ReadCpuInformation(cpuSubscribe, context, node)
+	go collector.ReadCpuInformation(cpuSubscribe, context)
 	//read ram information of peers in a separated thread
-	go collector.ReadRamInformation(ramSubscribe, context, node)
+	go collector.ReadRamInformation(ramSubscribe, context)
 	//read all the Ping Status from the other Peers
-	go collector.ReadPingStatus(pingSubscribe, context, node)
+	go collector.ReadPingStatus(pingSubscribe, context)
 	//read TCP infos from other Peers in a separated thread
-	go collector.ReadTCPstatus(tcpSubscribe, context, node)
+	go collector.ReadTCPstatus(tcpSubscribe, context)
+	//read Bandwidth infos from other Peers in a separated thread
+	go collector.ReadBandwidth(bandSubscribe, context)
 
 	//Run the program till its stopped (forced)
 	ch := make(chan os.Signal, 1)
@@ -97,10 +99,8 @@ func main() {
 }
 
 func createHost() host.Host {
-	//return a tracker for the Bandwidth of the local Peer
-	BandCounter = metrics.NewBandwidthCounter()
 	// create a new libp2p Host that listens on a TCP port
-	node, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"), libp2p.BandwidthReporter(BandCounter))
+	node, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
 	//if an error appears we try again after 60 second
 	if err != nil {
 		time.Sleep(60 * time.Second)

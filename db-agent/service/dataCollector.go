@@ -7,27 +7,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/beevik/ntp"
-	"github.com/google/uuid"
-	host2 "github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/metrics"
+	"github.com/libp2p/go-libp2p-core/host"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"log"
 	"time"
 )
 
 type dataCollector struct {
-	counter    *metrics.BandwidthCounter
+	node       host.Host
 	repository *repository.PostGresRepo
 }
 
-func NewDataCollectorService(bandCounter *metrics.BandwidthCounter, repo *repository.PostGresRepo) *dataCollector {
+func NewDataCollectorService(node host.Host, repo *repository.PostGresRepo) *dataCollector {
 	return &dataCollector{
-		counter:    bandCounter,
+		node:       node,
 		repository: repo,
 	}
 }
 
-func (collector *dataCollector) ReadSystemInfo(subscribe *pubsub.Subscription, context context.Context, node host2.Host) {
+func (collector *dataCollector) ReadSystemInfo(subscribe *pubsub.Subscription, context context.Context) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -35,7 +33,7 @@ func (collector *dataCollector) ReadSystemInfo(subscribe *pubsub.Subscription, c
 			if err != nil {
 				log.Println("cannot read from topic")
 			} else {
-				if message.ReceivedFrom.String() != node.ID().Pretty() {
+				if message.ReceivedFrom.String() != collector.node.ID().Pretty() {
 
 					peer := new(variables.PeerInfo)
 
@@ -53,7 +51,6 @@ func (collector *dataCollector) ReadSystemInfo(subscribe *pubsub.Subscription, c
 
 					//Here we store latency of the peer in the database as well as system information
 					collector.repository.SaveSystemMessage(peer, now, latency)
-					collector.getBandWidth(peer)
 
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 				}
@@ -62,7 +59,7 @@ func (collector *dataCollector) ReadSystemInfo(subscribe *pubsub.Subscription, c
 	}
 }
 
-func (collector *dataCollector) ReadRamInformation(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
+func (collector *dataCollector) ReadRamInformation(subscribe *pubsub.Subscription, ctx context.Context) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -70,7 +67,7 @@ func (collector *dataCollector) ReadRamInformation(subscribe *pubsub.Subscriptio
 			if err != nil {
 				log.Println("cannot read from topic")
 			} else {
-				if message.ReceivedFrom.String() != node.ID().Pretty() {
+				if message.ReceivedFrom.String() != collector.node.ID().Pretty() {
 
 					ram := new(variables.Ram)
 
@@ -88,7 +85,7 @@ func (collector *dataCollector) ReadRamInformation(subscribe *pubsub.Subscriptio
 	}
 }
 
-func (collector *dataCollector) ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
+func (collector *dataCollector) ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -96,7 +93,7 @@ func (collector *dataCollector) ReadCpuInformation(subscribe *pubsub.Subscriptio
 			if err != nil {
 				log.Println("cannot read from topic")
 			} else {
-				if message.ReceivedFrom.String() != node.ID().Pretty() {
+				if message.ReceivedFrom.String() != collector.node.ID().Pretty() {
 
 					cpu := new(variables.Cpu)
 
@@ -114,7 +111,7 @@ func (collector *dataCollector) ReadCpuInformation(subscribe *pubsub.Subscriptio
 	}
 }
 
-func (collector *dataCollector) ReadPingStatus(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
+func (collector *dataCollector) ReadPingStatus(subscribe *pubsub.Subscription, ctx context.Context) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -122,7 +119,7 @@ func (collector *dataCollector) ReadPingStatus(subscribe *pubsub.Subscription, c
 			if err != nil {
 				log.Println("cannot read from topic")
 			} else {
-				if message.ReceivedFrom.String() != node.ID().Pretty() {
+				if message.ReceivedFrom.String() != collector.node.ID().Pretty() {
 
 					status := new(variables.PingStatus)
 					//parse the JSON-encoded data and store the result into cpu
@@ -136,7 +133,7 @@ func (collector *dataCollector) ReadPingStatus(subscribe *pubsub.Subscription, c
 	}
 }
 
-func (collector *dataCollector) ReadTCPstatus(subscribe *pubsub.Subscription, ctx context.Context, node host2.Host) {
+func (collector *dataCollector) ReadTCPstatus(subscribe *pubsub.Subscription, ctx context.Context) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -144,7 +141,7 @@ func (collector *dataCollector) ReadTCPstatus(subscribe *pubsub.Subscription, ct
 			if err != nil {
 				log.Println("cannot read from topic")
 			} else {
-				if message.ReceivedFrom.String() != node.ID().Pretty() {
+				if message.ReceivedFrom.String() != collector.node.ID().Pretty() {
 
 					tcpStat := new(variables.TCPstatus)
 					//parse the JSON-encoded data and store the result into cpu
@@ -158,25 +155,26 @@ func (collector *dataCollector) ReadTCPstatus(subscribe *pubsub.Subscription, ct
 	}
 }
 
-func (collector *dataCollector) getBandWidth(host *variables.PeerInfo) {
+func (collector *dataCollector) ReadBandwidth(subscribe *pubsub.Subscription, ctx context.Context) {
+	for {
+		func() {
+			defer handlePanicError()
+			message, err := subscribe.Next(ctx)
+			if err != nil {
+				log.Println("cannot read from topic")
+			} else {
+				if message.ReceivedFrom.String() != collector.node.ID().Pretty() {
+					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
-	ioData := new(variables.IOData)
+					bandwidth := new(variables.Bandwidth)
+					//parse the JSON-encoded data and store the result into cpu
+					json.Unmarshal(message.Data, bandwidth)
 
-	// GetBandwidthForPeer returns a Stats struct with bandwidth metrics associated with the given peer.ID.
-	// The metrics returned include all traffic sent / received for the peer, regardless of protocol.
-	throughput := collector.counter.GetBandwidthForPeer(host.Id)
-
-	ioData.UUID = uuid.New().String()
-	ioData.NodeID = host.Id.Pretty()
-	ioData.Hostname = host.Hostname
-	ioData.TotalIn = throughput.TotalIn
-	ioData.TotalOut = throughput.TotalOut
-	ioData.RateIn = int(throughput.RateIn)
-	ioData.RateOut = int(throughput.TotalOut)
-	ioData.Ip = host.Ip
-	ioData.Time = host.Time
-
-	collector.repository.SaveThroughput(ioData)
+					collector.repository.SaveBandwidth(bandwidth)
+				}
+			}
+		}()
+	}
 }
 
 //TimeFromServer get the actual time from a remote server using the ntp Protocol

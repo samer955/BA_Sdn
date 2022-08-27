@@ -6,6 +6,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/metrics"
 	"log"
 	"net"
 	"os"
@@ -16,6 +17,9 @@ import (
 	"syscall"
 	"time"
 )
+
+//BandwidthCounter tracks incoming and outgoing data transferred by the local peer.
+var BandCounter *metrics.BandwidthCounter
 
 func main() {
 
@@ -90,8 +94,10 @@ func GetLocalIP() string {
 }
 
 func createHost() host.Host {
+	//return a tracker for the Bandwidth of the local Peer
+	BandCounter = metrics.NewBandwidthCounter()
 	// create a new libp2p Host that listens on a TCP port
-	node, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
+	node, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"), libp2p.BandwidthReporter(BandCounter))
 	//if an error appear we try again after 60 second
 	if err != nil {
 		time.Sleep(60 * time.Second)

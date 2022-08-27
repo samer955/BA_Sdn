@@ -47,16 +47,16 @@ type PingStatus struct {
 }
 
 //incoming and outgoing data transferred by the local peer.
-type IOData struct {
-	NodeID   string    `json:"node_id"`
+type Bandwidth struct {
 	UUID     string    `json:"uuid"`
+	Id       string    `json:"id"`
+	Source   string    `json:"source"`
+	Target   string    `json:"target"`
 	TotalIn  int64     `json:"total_in"`
 	TotalOut int64     `json:"total_out"`
 	RateIn   int       `json:"rate_in"`
 	RateOut  int       `json:"rate_out"`
 	Time     time.Time `json:"time"`
-	Ip       string    `json:"ip"`
-	Hostname string    `json:"hostname"`
 }
 
 //Queue Size = number of open TCP connections
