@@ -15,9 +15,6 @@ create table if not exists peer
     role        text
 );
 
-alter table peer
-    owner to "user";
-
 create unique index peer_uuid_uindex
     on peer (uuid);
 
@@ -33,9 +30,6 @@ create table if not exists status
     time     timestamp with time zone
 );
 
-alter table status
-    owner to "user";
-
 create unique index status_uuid_uindex
     on status (uuid);
 
@@ -50,9 +44,6 @@ create table if not exists ram
     usage    integer,
     time     timestamp with time zone
 );
-
-alter table ram
-    owner to "user";
 
 create unique index ram_uuid_uindex
     on ram (uuid);
@@ -70,9 +61,6 @@ create table if not exists cpu
     time     timestamp with time zone
 );
 
-alter table cpu
-    owner to "user";
-
 create unique index cpu_uuid_uindex
     on cpu (uuid);
 
@@ -88,9 +76,6 @@ create table if not exists tcp
     sent       integer,
     time       timestamp with time zone
 );
-
-alter table tcp
-    owner to "user";
 
 create unique index tcp_uuid_uindex
     on tcp (uuid);
@@ -109,9 +94,6 @@ create table if not exists bandwidth
     rate_out  integer,
     time      timestamp with time zone
 );
-
-alter table bandwidth
-    owner to "user";
 
 create unique index bandwidth_uuid_uindex
     on bandwidth (uuid);
