@@ -34,7 +34,8 @@ func NewSenderService(node host.Host, ip string, counter *metrics2.BandwidthCoun
 //SendPeerInfo will send system Information of this Peer and periodically a timestamp
 //in order to calculate the latency in ms between service and service
 func (s *Sender) SendPeerInfo(topic *pubsub.Topic, context context.Context, list *[]peer.AddrInfo) {
-	peerSys := metrics.NewPeerInfo(s.ip, s.node.ID(), os.Getenv("ROLE_HOST"))
+	peerSys := metrics.NewPeerInfo(s.ip, s.node.ID(), os.Getenv("ROLE_HOST"), os.Getenv("NETWORK_NAME"))
+
 	for {
 		if len(*list) == 0 {
 			continue
@@ -50,7 +51,7 @@ func sendPeerInfo(topic *pubsub.Topic, context context.Context, peer *metrics.Pe
 
 	peer.UUID = uuid.New().String()
 	peer.OnlineUser = metrics.GetNumberOfOnlineUser()
-	peer.Time = metrics.TimeFromServer()
+	peer.Time = time.Now()
 
 	err := subscriber.Publish(peer, context, topic)
 	if err != nil {
@@ -164,7 +165,7 @@ func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *metrics
 
 	tcpIfo.Received = received
 	tcpIfo.Sent = sent
-	tcpIfo.Time = metrics.TimeFromServer()
+	tcpIfo.Time = time.Now()
 
 	err := subscriber.Publish(tcpIfo, context, topic)
 	if err != nil {

@@ -37,6 +37,6 @@ func (status *PingStatus) SetPingStatus(res ping.Result, deadline *int) {
 		log.Println("pinged", status.Target, "without success", res.Error)
 		*deadline++
 	}
-	status.Time = TimeFromServer()
+	status.Time = time.Now()
 	status.UUID = uuid.New().String()
 }

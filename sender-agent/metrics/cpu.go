@@ -46,7 +46,7 @@ func cpuModel() string {
 
 //Get the actual CPU Percentage from the system
 func (c *Cpu) UpdateCpuPercentage() {
-	c.Time = TimeFromServer()
+	c.Time = time.Now()
 	cpuUsage, err := cpu.Percent(0, false)
 	if err != nil {
 		fmt.Println("Unable to get Cpu Percentage")

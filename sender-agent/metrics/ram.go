@@ -30,7 +30,7 @@ func NewRam(ip, nodeId string) *Ram {
 
 //Get the actual RAM Percentage from the system
 func (ram *Ram) UpdateRamPercentage() {
-	ram.Time = TimeFromServer()
+	ram.Time = time.Now()
 	vmStat, err := mem.VirtualMemory()
 	if err != nil {
 		fmt.Println("Unable to get Memory Info")

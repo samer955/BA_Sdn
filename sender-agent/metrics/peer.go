@@ -1,10 +1,9 @@
 package metrics
 
 import (
-	"fmt"
-	"github.com/beevik/ntp"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/shirou/gopsutil/v3/host"
+	"net"
 	"os"
 	"time"
 )
@@ -13,6 +12,7 @@ type PeerInfo struct {
 	Id         peer.ID   `json:"node_id"`
 	UUID       string    `json:"uuid"`
 	Ip         string    `json:"ip"`
+	Network    string    `json:"network"`
 	Hostname   string    `json:"host,omitempty"`
 	OS         string    `json:"os"`
 	Platform   string    `json:"platform"`
@@ -23,7 +23,7 @@ type PeerInfo struct {
 }
 
 // NewPeerInfo create method
-func NewPeerInfo(ip string, nodeId peer.ID, role string) *PeerInfo {
+func NewPeerInfo(ip string, nodeId peer.ID, role string, network string) *PeerInfo {
 
 	var platform, version, oS = platformInformation()
 	var host, _ = os.Hostname()
@@ -31,6 +31,7 @@ func NewPeerInfo(ip string, nodeId peer.ID, role string) *PeerInfo {
 	return &PeerInfo{
 		Id:       nodeId,
 		Ip:       ip,
+		Network:  network,
 		Hostname: host,
 		Platform: platform,
 		Version:  version,
@@ -52,12 +53,29 @@ func platformInformation() (string, string, string) {
 	return platform, version, os
 }
 
-//TimeFromServer get the actual time from a remote server using the ntp Protocol
-//The purpose is to synchronize the time between the Systems in order to avoid problems
-func TimeFromServer() time.Time {
-	now, err := ntp.Time("time.apple.com")
+// LocalIP get the host machine local IP address
+func LocalIP() string {
+	ifaces, err := net.Interfaces()
 	if err != nil {
-		fmt.Println(err)
+		return ""
 	}
-	return now
+	for _, i := range ifaces {
+		addrs, err := i.Addrs()
+		if err != nil {
+			return ""
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip.IsPrivate() {
+				return ip.String()
+			}
+		}
+	}
+	return ""
 }

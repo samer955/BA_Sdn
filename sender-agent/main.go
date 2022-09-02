@@ -9,10 +9,10 @@ import (
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/metrics"
 	"log"
-	"net"
 	"os"
 	"os/signal"
 	"sender-agent/discovery"
+	metrics2 "sender-agent/metrics"
 	"sender-agent/service"
 	"sender-agent/subscriber"
 	"strconv"
@@ -78,7 +78,7 @@ func main() {
 	// setup local mDNS discovery
 	discovery.SetupDiscovery(node, discoveryName)
 
-	sender := service.NewSenderService(node, GetLocalIP(), BandCounter, sendFrequency)
+	sender := service.NewSenderService(node, metrics2.LocalIP(), BandCounter, sendFrequency)
 
 	//send Peer-System-Information
 	go sender.SendPeerInfo(systemTopic, context, &discovery.PeerList)
@@ -96,22 +96,6 @@ func main() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
 	fmt.Println("Received signal, shutting down...")
-}
-
-func GetLocalIP() string {
-	// testing with  198.18.0.0/15 , see https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry.xhtml
-	conn, err := net.Dial("udp", "198.18.0.30:80")
-	if err != nil {
-		log.Printf("Cannot use UDP: %s", err.Error())
-		return "0.0.0.0"
-	}
-
-	defer conn.Close()
-
-	if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
-		return addr.IP.String()
-	}
-	return ""
 }
 
 func createHost() host.Host {
