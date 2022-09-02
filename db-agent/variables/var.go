@@ -14,6 +14,7 @@ type PeerInfo struct {
 	Platform   string    `json:"platform"`
 	Version    string    `json:"version"`
 	Role       string    `json:"role"`
+	Network    string    `json:"network"`
 	Time       time.Time `json:"time"`
 	OnlineUser int       `json:"online_user"`
 }
@@ -38,12 +39,14 @@ type Ram struct {
 }
 
 type PingStatus struct {
-	UUID   string    `json:"uuid"`
-	Source string    `json:"source"`
-	Target string    `json:"target"`
-	Alive  bool      `json:"alive"`
-	RTT    int64     `json:"rtt"`
-	Time   time.Time `json:"time"`
+	UUID     string    `json:"uuid"`
+	Source   string    `json:"source"`
+	Target   string    `json:"target"`
+	Alive    bool      `json:"alive"`
+	RTT      int64     `json:"rtt"`
+	SourceIp string    `json:"source_ip"`
+	TargetIp string    `json:"target_ip"`
+	Time     time.Time `json:"time"`
 }
 
 //incoming and outgoing data transferred by the local peer.

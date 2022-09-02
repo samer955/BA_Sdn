@@ -12,7 +12,8 @@ create table if not exists peer
     time        timestamp with time zone,
     node_id     text,
     online_user integer,
-    role        text
+    role        text,
+    network     text
 );
 
 create unique index peer_uuid_uindex
@@ -24,7 +25,9 @@ create table if not exists status
         constraint status_pk
             primary key,
     source   text,
-    target   text,
+    source_ip   text,
+    target_ip   text,
+    target      text,
     is_alive boolean,
     rtt      integer,
     time     timestamp with time zone

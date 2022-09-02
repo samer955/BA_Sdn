@@ -27,8 +27,8 @@ func (r *PostGresRepo) Migrate() {
 }
 
 func (r *PostGresRepo) SaveSystemMessage(peer *variables.PeerInfo, now time.Time, latency int64) {
-	_, err := r.db.Exec("INSERT INTO peer(node_id,uuid,hostname,ip,latency,platform,version,os,online_user,time,role) "+
-		"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+	_, err := r.db.Exec("INSERT INTO peer(node_id,uuid,hostname,ip,latency,platform,version,os,online_user,time,role,network) "+
+		"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
 		peer.Id.Pretty(),
 		peer.UUID,
 		peer.Hostname,
@@ -39,7 +39,8 @@ func (r *PostGresRepo) SaveSystemMessage(peer *variables.PeerInfo, now time.Time
 		peer.OS,
 		peer.OnlineUser,
 		now,
-		peer.Role)
+		peer.Role,
+		peer.Network)
 
 	if err != nil {
 		panic(err)
@@ -48,15 +49,16 @@ func (r *PostGresRepo) SaveSystemMessage(peer *variables.PeerInfo, now time.Time
 
 func (r *PostGresRepo) SavePingStatus(status *variables.PingStatus) {
 
-	_, err := r.db.Exec("INSERT INTO status(uuid,source,target,is_alive,rtt,time)"+
-		" VALUES($1,$2,$3,$4,$5,$6)",
+	_, err := r.db.Exec("INSERT INTO status(uuid,source,target,is_alive,rtt,time,source_ip,target_ip)"+
+		" VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
 		status.UUID,
 		status.Source,
 		status.Target,
 		status.Alive,
 		status.RTT,
 		status.Time,
-	)
+		status.SourceIp,
+		status.TargetIp)
 
 	if err != nil {
 		panic(err)
@@ -128,4 +130,12 @@ func (r *PostGresRepo) SaveBandwidth(band *variables.Bandwidth) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (r *PostGresRepo) GetIpFromNode(node string) string {
+	ip := ""
+	sqlStatement := `SELECT ip FROM peer WHERE node_id=$1;`
+	// Query for a value based on a single row.
+	r.db.QueryRow(sqlStatement, node).Scan(&ip)
+	return ip
 }

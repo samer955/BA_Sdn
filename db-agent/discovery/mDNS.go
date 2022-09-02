@@ -2,7 +2,6 @@ package discovery
 
 import (
 	"context"
-	"fmt"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
@@ -17,12 +16,15 @@ type discoveryNotifee struct {
 }
 
 func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
-	fmt.Printf("discovered a new peer %s\n", info.ID.Pretty())
-
 	if d.node.ID().Pretty() != info.ID.Pretty() {
-		d.node.Connect(context.Background(), info)
-		PeerList = append(PeerList, info)
+		log.Printf("discovered a new peer %s\n", info.ID.Pretty())
 
+		err := d.node.Connect(context.Background(), info)
+		if err != nil {
+			log.Printf("unable to connect to Peer %s ", info.ID.Pretty())
+			return
+		}
+		PeerList = append(PeerList, info)
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
 	}
 }

@@ -13,4 +13,5 @@ type Repository interface {
 	SavePingStatus(status *variables.PingStatus)
 	SaveTCPstatus(tcpStatus *variables.TCPstatus)
 	SaveBandwidth(data *variables.Bandwidth)
+	GetIpFromNode(node string) string
 }
