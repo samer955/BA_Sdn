@@ -55,7 +55,7 @@ func main() {
 	//initialize Repository and DataCollector
 	repo := repository.NewPostGresRepository(db)
 	repo.Migrate()
-	collector := service.NewDataCollectorService(node, repo)
+	receiver := service.NewDataCollectorService(node, repo)
 
 	//create a new PubSub Service using the GossipSub router
 	pubsub := subscriber.NewPubSubService(context, node)
@@ -82,17 +82,17 @@ func main() {
 	discovery.SetupDiscovery(node, discoveryTag)
 
 	//read System Information of peers in a separated thread
-	go collector.ReadSystemInfo(systemSubscribe, context)
+	go receiver.ReadSystemInfo(systemSubscribe, context)
 	//read cpu information of peers in a separated thread
-	go collector.ReadCpuInformation(cpuSubscribe, context)
+	go receiver.ReadCpuInformation(cpuSubscribe, context)
 	//read ram information of peers in a separated thread
-	go collector.ReadRamInformation(ramSubscribe, context)
+	go receiver.ReadRamInformation(ramSubscribe, context)
 	//read all the Ping Status from the other Peers
-	go collector.ReadPingStatus(pingSubscribe, context)
+	go receiver.ReadPingStatus(pingSubscribe, context)
 	//read TCP infos from other Peers in a separated thread
-	go collector.ReadTCPstatus(tcpSubscribe, context)
+	go receiver.ReadTCPstatus(tcpSubscribe, context)
 	//read Bandwidth infos from other Peers in a separated thread
-	go collector.ReadBandwidth(bandSubscribe, context)
+	go receiver.ReadBandwidth(bandSubscribe, context)
 
 	//Run the program till its stopped (forced)
 	ch := make(chan os.Signal, 1)
