@@ -4,45 +4,48 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestNewPubSubService(t *testing.T) {
-
+func setupEnvironment(t *testing.T) (host.Host, context.Context) {
 	ctx := context.Background()
-	node, _ := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
+	node, _ := libp2p.New()
 
-	ps := NewPubSubService(ctx, node)
+	t.Cleanup(func() {
+		node.Close()
+		ctx.Done()
+	})
+	return node, ctx
+}
 
-	assert.NotEqual(t, ps, nil)
+func TestNewPubSubService(t *testing.T) {
+	node, ctx := setupEnvironment(t)
+	psub := NewPubSubService(ctx, node)
+
+	assert.NotEqual(t, psub, nil)
 }
 
 func TestJoinTopic(t *testing.T) {
-
 	const roomtest = "test"
+	node, ctx := setupEnvironment(t)
+	psub := NewPubSubService(ctx, node)
 
-	ctx := context.Background()
-	node, _ := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	_ = NewPubSubService(ctx, node)
-
-	testTopic := JoinTopic(roomtest)
+	testTopic := psub.JoinTopic(roomtest)
 
 	assert.Equal(t, testTopic.String(), roomtest)
 }
 
 func TestSubscribe(t *testing.T) {
-
 	const roomtest = "test"
-
-	ctx := context.Background()
-	node, _ := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
+	node, ctx := setupEnvironment(t)
 	ps := NewPubSubService(ctx, node)
+	testTopic := ps.JoinTopic(roomtest)
 
-	testTopic := JoinTopic(roomtest)
-	_ = Subscribe(testTopic)
+	ps.Subscribe(testTopic)
 
-	assert.Contains(t, ps.GetTopics(), testTopic.String())
+	assert.Contains(t, ps.psub.GetTopics(), testTopic.String())
 }
 
 func TestPublish(t *testing.T) {
@@ -50,23 +53,20 @@ func TestPublish(t *testing.T) {
 	type Message struct {
 		Data string
 	}
-	const roomtest = "test"
 	helloMessage := new(Message)
 	helloMessage.Data = "Hello World"
+	const roomtest = "test"
+	node, ctx := setupEnvironment(t)
+	ps := NewPubSubService(ctx, node)
+	testTopic := ps.JoinTopic(roomtest)
+	subscr := ps.Subscribe(testTopic)
 
-	ctx := context.Background()
-	node, _ := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	_ = NewPubSubService(ctx, node)
-	testTopic := JoinTopic(roomtest)
-	subscr := Subscribe(testTopic)
 	Publish(helloMessage, ctx, testTopic)
-
 	//read the message published
-	received, _ := subscr.Next(ctx)
-
+	receivedMessageByte, _ := subscr.Next(ctx)
 	//unmarshal message data
 	receivedMess := new(Message)
-	json.Unmarshal(received.Data, receivedMess)
+	json.Unmarshal(receivedMessageByte.Data, receivedMess)
 
 	assert.Equal(t, receivedMess.Data, helloMessage.Data)
 }
