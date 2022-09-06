@@ -49,8 +49,8 @@ func (s *Sender) SendPeerInfo(topic *pubsub.Topic, context context.Context, list
 
 func sendPeerInfo(topic *pubsub.Topic, context context.Context, peer *metrics.PeerInfo) {
 
+	peer.UpdateLoggedInUser()
 	peer.UUID = uuid.New().String()
-	peer.OnlineUser = metrics.GetNumberOfOnlineUser()
 	peer.Time = time.Now()
 
 	err := subscriber.Publish(peer, context, topic)
@@ -160,11 +160,8 @@ func (s *Sender) SendTCPstatus(topic *pubsub.Topic, context context.Context, pee
 func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *metrics.TCPstatus) {
 
 	tcpIfo.UUID = uuid.New().String()
-	tcpIfo.QueueSize = metrics.TcpQueueSize()
-	received, sent := metrics.TcpSegmentsNumber()
-
-	tcpIfo.Received = received
-	tcpIfo.Sent = sent
+	tcpIfo.TcpQueueSize()
+	tcpIfo.TcpSegmentsNumber()
 	tcpIfo.Time = time.Now()
 
 	err := subscriber.Publish(tcpIfo, context, topic)
@@ -174,7 +171,7 @@ func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *metrics
 	log.Println("sending TCP-info...")
 }
 
-// GetBandWidthForActivePeer listens on the sytemtopic to get the information about an online Peer in order to get
+//GetBandWidthForActivePeer listens on the sytemtopic to get the information about an online Peer in order to get
 //the Bandwidth between them
 func (s *Sender) GetBandWidthForActivePeer(subscribe *pubsub.Subscription, context context.Context, topic *pubsub.Topic) {
 	for {
@@ -183,9 +180,9 @@ func (s *Sender) GetBandWidthForActivePeer(subscribe *pubsub.Subscription, conte
 			log.Println("cannot read from topic")
 		} else {
 			if message.ReceivedFrom.String() != s.node.ID().Pretty() {
-				peer := new(metrics.PeerInfo)
-				json.Unmarshal(message.Data, peer)
-				s.getBandwidth(peer, topic, context)
+				targetPeer := new(metrics.PeerInfo)
+				json.Unmarshal(message.Data, targetPeer)
+				s.getBandwidth(targetPeer, topic, context)
 			}
 		}
 	}

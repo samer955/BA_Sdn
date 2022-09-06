@@ -5,95 +5,130 @@ import (
 	"encoding/json"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
+	metrics2 "github.com/libp2p/go-libp2p-core/metrics"
+	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"libp2p-sender/metrics"
-	"libp2p-sender/subscriber"
+	"sender-agent/metrics"
+	"sender-agent/subscriber"
 	"testing"
-	"time"
 )
 
-type Mocking struct {
-	mock.Mock
-}
-
-func setup(node host.Host, roomtest string) (*pubsub.Topic, *pubsub.Subscription, context.Context) {
-
+func setupEnvironment(t *testing.T) (*pubsub.Topic, *pubsub.Subscription, context.Context, host.Host, *metrics2.BandwidthCounter) {
+	const roomTest = "test"
 	ctx := context.Background()
-	_ = subscriber.NewPubSubService(ctx, node)
-	testTopic := subscriber.JoinTopic(roomtest)
-	subsc := subscriber.Subscribe(testTopic)
+	bandCounter := metrics2.NewBandwidthCounter()
+	node, _ := libp2p.New(libp2p.BandwidthReporter(bandCounter))
+	psub := subscriber.NewPubSubService(ctx, node)
+	testTopic := psub.JoinTopic(roomTest)
+	subsc := psub.Subscribe(testTopic)
 
-	return testTopic, subsc, ctx
-
+	t.Cleanup(func() {
+		node.Close()
+		ctx.Done()
+		testTopic.Close()
+		subsc.Cancel()
+		bandCounter.Reset()
+	})
+	return testTopic, subsc, ctx, node, bandCounter
 }
 
+//Here it is tested if the system-information are sent/published
 func TestSendPeerInfo(t *testing.T) {
+	topic, subscr, ctx, _, _ := setupEnvironment(t)
+	peerInfo := metrics.NewPeerInfo("1.1.1.1", "test_ID", "TEST", "HOME")
 
-	node, _ := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	peer_info := metrics.NewPeerInfo("1.1.1.1", "test_ID", "sender")
-	topic, subscr, ctx := setup(node, "test")
-
-	t.Cleanup(func() {
-		node.Close()
-		ctx.Done()
-		topic.Close()
-		subscr.Cancel()
-	})
-
-	sendPeerInfo(topic, ctx, peer_info, nil)
+	sendPeerInfo(topic, ctx, peerInfo)
 	message, _ := subscr.Next(ctx)
-
-	peerToBytesConverted, _ := json.Marshal(peer_info)
+	peerToBytesConverted, _ := json.Marshal(peerInfo)
 
 	assert.Equal(t, message.Data, peerToBytesConverted)
-	assert.NotEqual(t, peer_info.UUID, "")
-	assert.NotEqual(t, peer_info.Time, time.Time{})
 }
 
+//Here it is tested if the cpu is sent/published
 func TestSendCpuInfo(t *testing.T) {
+	topic, subscr, ctx, _, _ := setupEnvironment(t)
+	cpu := metrics.NewCpu("1.1.1.1", "test_ID")
 
-	node, _ := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	peer_cpu := metrics.NewCpu("1.1.1.1", "test_ID")
-	topic, subscr, ctx := setup(node, "test")
-
-	t.Cleanup(func() {
-		node.Close()
-		ctx.Done()
-		topic.Close()
-		subscr.Cancel()
-	})
-
-	sendCpuInfo(topic, nil, ctx, peer_cpu)
+	sendCpuInfo(topic, ctx, cpu)
 	message, _ := subscr.Next(ctx)
+	cpuToBytesConverted, _ := json.Marshal(cpu)
 
-	peerToBytesConverted, _ := json.Marshal(peer_cpu)
-
-	assert.Equal(t, message.Data, peerToBytesConverted)
-	assert.NotEqual(t, peer_cpu.UUID, "")
-	assert.NotEqual(t, peer_cpu.Usage, 0)
+	assert.Equal(t, message.Data, cpuToBytesConverted)
 }
 
+//Here it is tested if the ram is sent/published
 func TestSendRamInfo(t *testing.T) {
+	topic, subscr, ctx, _, _ := setupEnvironment(t)
+	ram := metrics.NewRam("1.1.1.1", "test_ID")
 
-	node, _ := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	peer_ram := metrics.NewRam("1.1.1.1", "test_ID")
-	topic, subscr, ctx := setup(node, "test")
+	sendRamInfo(topic, ctx, ram)
+	message, _ := subscr.Next(ctx)
+	ramToBytesConverted, _ := json.Marshal(ram)
+
+	assert.Equal(t, message.Data, ramToBytesConverted)
+}
+
+//Here it is tested if the tcpStatus is sent/published
+func TestSendTCPstatus(t *testing.T) {
+	topic, subscr, ctx, _, _ := setupEnvironment(t)
+	tcpStatus := metrics.NewTCPstatus("1.1.1.1")
+
+	sendTCPstatus(topic, ctx, tcpStatus)
+	message, _ := subscr.Next(ctx)
+	ramToBytesConverted, _ := json.Marshal(tcpStatus)
+
+	assert.Equal(t, message.Data, ramToBytesConverted)
+}
+
+type discoveryNotifee struct {
+	node host.Host
+}
+
+func (d discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
+	d.node.Connect(context.Background(), info)
+}
+
+func secondPeer(t *testing.T, discoveryName string) host.Host {
+	host, _ := libp2p.New()
+	discovery := mdns.NewMdnsService(host, discoveryName, &discoveryNotifee{node: host})
+	_ = discovery.Start()
+	t.Cleanup(func() {
+		host.Close()
+		discovery.Close()
+	})
+	return host
+}
+
+func TestNewSenderService(t *testing.T) {
+	ip := "1.1.1.1"
+	_, _, _, node, counter := setupEnvironment(t)
+
+	sender := NewSenderService(node, ip, counter, 30)
+
+	assert.NotNil(t, sender)
+}
+
+func TestSenderGetBandWidth(t *testing.T) {
+	topic, subscr, ctx, node, counter := setupEnvironment(t)
+	sender := NewSenderService(node, "1.1.1.1", counter, 30)
+	discovery := mdns.NewMdnsService(node, "discoveryTest", &discoveryNotifee{node: node})
+	_ = discovery.Start()
+	peer2 := secondPeer(t, "discoveryTest")
 
 	t.Cleanup(func() {
 		node.Close()
-		ctx.Done()
-		topic.Close()
-		subscr.Cancel()
+		discovery.Close()
+		peer2.Close()
 	})
+	peer2info := metrics.NewPeerInfo("", peer2.ID(), "", "")
 
-	sendRamInfo(topic, nil, ctx, peer_ram)
+	sender.getBandwidth(peer2info, topic, ctx)
 	message, _ := subscr.Next(ctx)
 
-	peerToBytesConverted, _ := json.Marshal(peer_ram)
-
-	assert.Equal(t, message.Data, peerToBytesConverted)
-	assert.NotEqual(t, peer_ram.UUID, "")
-	assert.NotEqual(t, peer_ram.Usage, 0)
+	assert.Contains(t, message.String(), "total_in")
+	assert.Contains(t, message.String(), "total_out")
+	assert.Contains(t, message.String(), "rate_in")
+	assert.Contains(t, message.String(), "rate_in")
 }
