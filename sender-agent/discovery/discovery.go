@@ -34,14 +34,13 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 		}
 		PeerList = append(PeerList, info)
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
-		//once discovered a new Peer the local Host start to ping it and the result will be published
+		//once discovered a new Peer the local Host start to ping it. The result will be published in the pingTopic
 		service.SendPing(context.Background(), d.node, info, pingTopic)
 	}
 }
 
 func SetupDiscovery(node host.Host, discoveryName string) error {
 	discovery := mdns.NewMdnsService(node, discoveryName, &discoveryNotifee{node: node})
-
 	start := discovery.Start()
 	//If any error is returned try again in 1min
 	if start != nil {
