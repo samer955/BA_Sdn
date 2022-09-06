@@ -15,10 +15,9 @@ type Bandwidth struct {
 	Time     time.Time `json:"time"`
 }
 
-func NewBandWidth(ip string, nodeId string) *Bandwidth {
-
+func NewBandWidth(sourceIp string, sourceId string) *Bandwidth {
 	return &Bandwidth{
-		Id:     nodeId,
-		Source: ip,
+		Id:     sourceId,
+		Source: sourceIp,
 	}
 }

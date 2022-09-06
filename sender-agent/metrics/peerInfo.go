@@ -1,10 +1,15 @@
 package metrics
 
 import (
+	"bufio"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/shirou/gopsutil/v3/host"
+	"log"
 	"net"
 	"os"
+	"os/exec"
+	"runtime"
+	"strings"
 	"time"
 )
 
@@ -53,7 +58,7 @@ func platformInformation() (string, string, string) {
 	return platform, version, os
 }
 
-// LocalIP get the host machine local IP address
+// LocalIP get the host machine local IP address, based on the https://stackoverflow.com/questions/23558425/how-do-i-get-the-local-ip-address-in-go
 func LocalIP() string {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -78,4 +83,67 @@ func LocalIP() string {
 		}
 	}
 	return ""
+}
+
+func (p *PeerInfo) UpdateLoggedInUser() {
+	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		output, err := exec.Command("who").Output()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		users := outputToIntUserLinux(string(output))
+		p.OnlineUser = users
+		return
+	}
+	if runtime.GOOS == "windows" {
+		output, err := exec.Command("query", "user").Output()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		users := outputToIntUserWin(string(output))
+		p.OnlineUser = users
+		return
+	}
+	return
+}
+
+func outputToIntUserWin(output string) int {
+	var users = 0
+
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+		words := strings.Fields(line)
+		if strings.HasPrefix(words[3], "Active") {
+			users++
+		}
+	}
+	err := scanner.Err()
+	if err != nil {
+		return 0
+	}
+	return users
+}
+
+func outputToIntUserLinux(output string) int {
+	var users = 0
+
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+		users++
+	}
+	err := scanner.Err()
+	if err != nil {
+		return 0
+	}
+	return users
 }

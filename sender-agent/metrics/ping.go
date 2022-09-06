@@ -25,7 +25,6 @@ func NewPingStatus(source, target string) *PingStatus {
 }
 
 func (status *PingStatus) SetPingStatus(res ping.Result, deadline *int) {
-
 	if res.Error == nil {
 		status.Alive = true
 		status.RTT = res.RTT.Milliseconds()

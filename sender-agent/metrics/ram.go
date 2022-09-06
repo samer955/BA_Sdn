@@ -1,8 +1,8 @@
 package metrics
 
 import (
-	"fmt"
 	"github.com/shirou/gopsutil/v3/mem"
+	"log"
 	"os"
 	"time"
 )
@@ -16,11 +16,9 @@ type Ram struct {
 	Time     time.Time `json:"time, omitempty"`
 }
 
-// Ram create method
+//create NewRam method
 func NewRam(ip, nodeId string) *Ram {
-
 	host, _ := os.Hostname()
-
 	return &Ram{
 		Id:       nodeId,
 		Ip:       ip,
@@ -33,8 +31,8 @@ func (ram *Ram) UpdateRamPercentage() {
 	ram.Time = time.Now()
 	vmStat, err := mem.VirtualMemory()
 	if err != nil {
-		fmt.Println("Unable to get Memory Info")
-		ram.Usage = 00
+		log.Println("Unable to get Memory percentage")
+		ram.Usage = 0
 		return
 	}
 	ram.Usage = int(vmStat.UsedPercent)

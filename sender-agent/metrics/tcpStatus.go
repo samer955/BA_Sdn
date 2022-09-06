@@ -25,64 +25,68 @@ type TCPstatus struct {
 	Time      time.Time `json:"time"`
 }
 
-var execCommand = exec.Command
-
 func NewTCPstatus(ip string) *TCPstatus {
-
 	var host, _ = os.Hostname()
-
 	return &TCPstatus{
 		Ip:       ip,
 		Hostname: host,
 	}
 }
 
+var execCommand = exec.Command
+
 //Working on Windows and Linux in order to get the number of open tcp queue of the host.
 //Execution of the "netstat -na" Command in order to get all the ESTABLISHED Queue
-func TcpQueueSize() int {
-
+func (t *TCPstatus) TcpQueueSize() {
 	out, err := execCommand("netstat", "-na").Output()
 	if err != nil {
 		log.Println(err)
+		return
 	}
 	output := string(out)
 	tcpQueue, err := numberOfTcpQueue(output)
 	if err != nil {
 		log.Println(err)
+		return
 	}
-	return tcpQueue
+	t.QueueSize = tcpQueue
 }
 
 //This function run the command netstat -s or netstat -st in order to get the number of
 //TCP segments received and sent
-func TcpSegmentsNumber() (int, int) {
+func (t *TCPstatus) TcpSegmentsNumber() {
 
 	if runtime.GOOS == "windows" {
 		pr, err := execCommand("netstat", "-s").Output()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
+			return
 		}
 		received, sent, err := numberOfSegmentsWindows(string(pr))
 
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
-		return received, sent
+		t.Received = received
+		t.Sent = sent
+		return
 	}
 
 	if runtime.GOOS == "linux" {
 		pr, err := execCommand("netstat", "-st").Output()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
+			return
 		}
 		received, sent, err := numbersOfSegmentsLinux(string(pr))
 
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
-		return received, sent
+		t.Received = received
+		t.Sent = sent
+		return
 	}
-	return 0, 0
 }
 
 //Format the output of "netstat -na" to find the ESTAB tcp queue

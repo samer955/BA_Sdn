@@ -1,8 +1,8 @@
 package metrics
 
 import (
-	"fmt"
 	"github.com/shirou/gopsutil/v3/cpu"
+	"log"
 	"os"
 	"time"
 )
@@ -49,8 +49,8 @@ func (c *Cpu) UpdateCpuPercentage() {
 	c.Time = time.Now()
 	cpuUsage, err := cpu.Percent(0, false)
 	if err != nil {
-		fmt.Println("Unable to get Cpu Percentage")
-		c.Usage = 00
+		log.Println("Unable to get Cpu Percentage")
+		c.Usage = 0
 		return
 	}
 	c.Usage = int(cpuUsage[0])
