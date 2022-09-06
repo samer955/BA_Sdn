@@ -3,6 +3,7 @@ package metrics
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"runtime"
@@ -24,6 +25,8 @@ type TCPstatus struct {
 	Time      time.Time `json:"time"`
 }
 
+var execCommand = exec.Command
+
 func NewTCPstatus(ip string) *TCPstatus {
 
 	var host, _ = os.Hostname()
@@ -38,14 +41,14 @@ func NewTCPstatus(ip string) *TCPstatus {
 //Execution of the "netstat -na" Command in order to get all the ESTABLISHED Queue
 func TcpQueueSize() int {
 
-	out, err := exec.Command("netstat", "-na").Output()
+	out, err := execCommand("netstat", "-na").Output()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	output := string(out)
 	tcpQueue, err := numberOfTcpQueue(output)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	return tcpQueue
 }
@@ -55,7 +58,7 @@ func TcpQueueSize() int {
 func TcpSegmentsNumber() (int, int) {
 
 	if runtime.GOOS == "windows" {
-		pr, err := exec.Command("netstat", "-s").Output()
+		pr, err := execCommand("netstat", "-s").Output()
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -68,7 +71,7 @@ func TcpSegmentsNumber() (int, int) {
 	}
 
 	if runtime.GOOS == "linux" {
-		pr, err := exec.Command("netstat", "-st").Output()
+		pr, err := execCommand("netstat", "-st").Output()
 		if err != nil {
 			fmt.Println(err)
 		}
