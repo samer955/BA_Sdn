@@ -11,7 +11,7 @@ type Ram struct {
 	Id       string    `json:"node_id"`
 	UUID     string    `json:"uuid"`
 	Ip       string    `json:"ip"`
-	Hostname string    `json:"host,omitempty"`
+	Hostname string    `json:"node,omitempty"`
 	Usage    int       `json:"usage, omitempty"`
 	Time     time.Time `json:"time, omitempty"`
 }

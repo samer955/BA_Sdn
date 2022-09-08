@@ -5,7 +5,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	"github.com/stretchr/testify/assert"
-	"strings"
 	"testing"
 	"time"
 )
@@ -126,7 +125,7 @@ func TestNewPeerInfo(t *testing.T) {
 	role := "TEST_SENDER"
 	network := "HOME"
 
-	peer := NewPeerInfo(ip, peerID, role, network)
+	peer := NewSystemInfo(ip, peerID, role, network)
 
 	assert.NotEqual(t, peer, nil)
 	assert.NotEqual(t, peer.Hostname, "")
@@ -135,20 +134,4 @@ func TestNewPeerInfo(t *testing.T) {
 	assert.NotEqual(t, peer.Platform, "")
 	assert.Equal(t, peer.Network, network)
 	assert.Equal(t, peer.Role, role)
-}
-
-func TestLocalIP(t *testing.T) {
-	privateIP := LocalIP()
-	isPrivate := false
-
-	if privateIP == "" {
-		return
-	}
-	if strings.HasPrefix(privateIP, "10.") ||
-		strings.HasPrefix(privateIP, "172.") ||
-		strings.HasPrefix(privateIP, "192.") {
-		isPrivate = true
-	}
-	assert.NotEqual(t, privateIP, "")
-	assert.Equal(t, isPrivate, true)
 }

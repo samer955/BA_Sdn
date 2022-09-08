@@ -5,7 +5,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/shirou/gopsutil/v3/host"
 	"log"
-	"net"
 	"os"
 	"os/exec"
 	"runtime"
@@ -13,12 +12,12 @@ import (
 	"time"
 )
 
-type PeerInfo struct {
+type SystemInfo struct {
 	Id         peer.ID   `json:"node_id"`
 	UUID       string    `json:"uuid"`
 	Ip         string    `json:"ip"`
 	Network    string    `json:"network"`
-	Hostname   string    `json:"host,omitempty"`
+	Hostname   string    `json:"node,omitempty"`
 	OS         string    `json:"os"`
 	Platform   string    `json:"platform"`
 	Version    string    `json:"version"`
@@ -27,13 +26,13 @@ type PeerInfo struct {
 	Time       time.Time `json:"time"`
 }
 
-// NewPeerInfo create method
-func NewPeerInfo(ip string, nodeId peer.ID, role string, network string) *PeerInfo {
+// NewSystemInfo create method
+func NewSystemInfo(ip string, nodeId peer.ID, role string, network string) *SystemInfo {
 
 	var platform, version, oS = platformInformation()
 	var host, _ = os.Hostname()
 
-	return &PeerInfo{
+	return &SystemInfo{
 		Id:       nodeId,
 		Ip:       ip,
 		Network:  network,
@@ -58,50 +57,15 @@ func platformInformation() (string, string, string) {
 	return platform, version, os
 }
 
-// LocalIP get the host machine local IP address, based on the https://stackoverflow.com/questions/23558425/how-do-i-get-the-local-ip-address-in-go
-func LocalIP() string {
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return ""
-	}
-	for _, i := range ifaces {
-		addrs, err := i.Addrs()
-		if err != nil {
-			return ""
-		}
-		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
-			if ip.IsPrivate() {
-				return ip.String()
-			}
-		}
-	}
-	return ""
-}
-
-func (p *PeerInfo) UpdateLoggedInUser() {
+func (p *SystemInfo) UpdateLoggedInUser() {
 	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-		output, err := exec.Command("who").Output()
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		output, _ := exec.Command("who").Output()
 		users := outputToIntUserLinux(string(output))
 		p.OnlineUser = users
 		return
 	}
 	if runtime.GOOS == "windows" {
-		output, err := exec.Command("query", "user").Output()
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		output, _ := exec.Command("query", "user").Output()
 		users := outputToIntUserWin(string(output))
 		p.OnlineUser = users
 		return
@@ -125,6 +89,7 @@ func outputToIntUserWin(output string) int {
 	}
 	err := scanner.Err()
 	if err != nil {
+		log.Println(err)
 		return 0
 	}
 	return users

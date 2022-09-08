@@ -35,7 +35,7 @@ func NewTCPstatus(ip string) *TCPstatus {
 
 var execCommand = exec.Command
 
-//Working on Windows and Linux in order to get the number of open tcp queue of the host.
+//Working on Windows and Linux in order to get the number of open tcp queue of the node.
 //Execution of the "netstat -na" Command in order to get all the ESTABLISHED Queue
 func (t *TCPstatus) TcpQueueSize() {
 	out, err := execCommand("netstat", "-na").Output()
