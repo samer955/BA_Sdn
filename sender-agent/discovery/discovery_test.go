@@ -7,24 +7,26 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	"github.com/stretchr/testify/assert"
+	"sender-agent/node"
 	"sender-agent/subscriber"
 	"testing"
 	"time"
 )
 
-func setupEnvironment(t *testing.T) (host.Host, *pubsub.Topic) {
+func setupEnvironment(t *testing.T) (node.Node, *pubsub.Topic) {
 	const roomTest = "test"
 	ctx := context.Background()
 	host, _ := libp2p.New()
-	psub := subscriber.NewPubSubService(ctx, host)
+	testNode := node.Node{Host: host}
+	psub := subscriber.NewPubSubService(ctx, testNode)
 	topic := psub.JoinTopic(roomTest)
 	SetPingTopic(topic)
 
 	t.Cleanup(func() {
-		host.Close()
+		testNode.Host.Close()
 		ctx.Done()
 	})
-	return host, topic
+	return testNode, topic
 }
 
 func TestSetPingTopic(t *testing.T) {
@@ -33,9 +35,9 @@ func TestSetPingTopic(t *testing.T) {
 }
 
 func TestSetupDiscovery(t *testing.T) {
-	node, _ := setupEnvironment(t)
+	testNode, _ := setupEnvironment(t)
 
-	err := SetupDiscovery(node, "test_0")
+	err := SetupDiscovery(testNode, "test_0")
 
 	assert.Nil(t, err)
 }
@@ -52,8 +54,8 @@ func secondPeer(t *testing.T, discoveryName string) host.Host {
 }
 
 func TestDiscoveryHandlePeerFound(t *testing.T) {
-	host, _ := setupEnvironment(t)
-	SetupDiscovery(host, "discoveryRoomTest")
+	testNode, _ := setupEnvironment(t)
+	SetupDiscovery(testNode, "discoveryRoomTest")
 	secondPeer := secondPeer(t, "discoveryRoomTest")
 	limit := time.Now()
 
@@ -68,5 +70,5 @@ func TestDiscoveryHandlePeerFound(t *testing.T) {
 		break
 	}
 
-	assert.Contains(t, host.Peerstore().Peers(), secondPeer.ID())
+	assert.Contains(t, testNode.Host.Peerstore().Peers(), secondPeer.ID())
 }

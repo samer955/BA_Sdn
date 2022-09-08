@@ -7,8 +7,8 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	"log"
+	"sender-agent/node"
 	"sender-agent/service"
-	"time"
 )
 
 type discoveryNotifee struct {
@@ -18,6 +18,7 @@ type discoveryNotifee struct {
 var PeerList []peer.AddrInfo
 var pingTopic *pubsub.Topic
 
+//used to publish the ping results on this topic after discovering a new peer
 func SetPingTopic(topic *pubsub.Topic) {
 	pingTopic = topic
 }
@@ -39,13 +40,8 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 	}
 }
 
-func SetupDiscovery(node host.Host, discoveryName string) error {
-	discovery := mdns.NewMdnsService(node, discoveryName, &discoveryNotifee{node: node})
+func SetupDiscovery(node node.Node, discoveryName string) error {
+	discovery := mdns.NewMdnsService(node.Host, discoveryName, &discoveryNotifee{node: node.Host})
 	start := discovery.Start()
-	//If any error is returned try again in 1min
-	if start != nil {
-		time.Sleep(60 * time.Second)
-		SetupDiscovery(node, discoveryName)
-	}
 	return start
 }
