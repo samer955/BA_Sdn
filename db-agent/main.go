@@ -2,16 +2,14 @@ package main
 
 import (
 	"context"
-	"database/sql"
+	"db-agent/config"
 	"db-agent/discovery"
+	"db-agent/node"
 	"db-agent/repository"
 	"db-agent/service"
 	"db-agent/subscriber"
 	"fmt"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/host"
 	"log"
 	"os"
 	"os/signal"
@@ -22,44 +20,34 @@ import (
 func main() {
 
 	const (
-		discoveryTag = "discoveryRoom"
-		roomSystem   = "system"
-		roomCpu      = "cpu"
-		roomRam      = "ram"
-		roomPing     = "ping"
-		roomTcp      = "tcp"
-		roomBand     = "bandwidth"
+		discoveryName = "discoveryRoom"
+		roomSystem    = "system"
+		roomCpu       = "cpu"
+		roomRam       = "ram"
+		roomPing      = "ping"
+		roomTcp       = "tcp"
+		roomBand      = "bandwidth"
 	)
 
-	err := godotenv.Load("db.env")
+	var (
+		node node.Node
+		mdns error
+	)
 
-	if err != nil {
-		log.Println("Error loading db.env file")
-	}
-
-	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
-
-	db, err := sql.Open(os.Getenv("DB_DRIVER"), psqlInfo)
-
-	if err != nil {
-		panic(err)
-	} else {
-		fmt.Println("Successfully connected!")
-	}
-
-	node := createHost()
 	context := context.Background()
 
+	node.StartNode()
+	config := config.GetConfig()
+
 	//initialize Repository and DataCollector
-	repo := repository.NewPostGresRepository(db)
+	repo := repository.NewPostGresRepository(config.Connection)
 	repo.Migrate()
-	receiver := service.NewDataCollectorService(node, repo)
+	receiver := service.Receiver{Repository: repo, Node: node}
 
 	//create a new PubSub Service using the GossipSub router
 	pubsub := subscriber.NewPubSubService(context, node)
 
+	//subscribe to all the topics
 	pingTopic := pubsub.JoinTopic(roomPing)
 	pingSubscribe := pubsub.Subscribe(pingTopic)
 
@@ -78,8 +66,15 @@ func main() {
 	bandTopic := pubsub.JoinTopic(roomBand)
 	bandSubscribe := pubsub.Subscribe(bandTopic)
 
-	// setup local mDNS discovery
-	discovery.SetupDiscovery(node, discoveryTag)
+	//setup local mDNS discovery. If an error occurs try again in 60 seconds
+	for {
+		mdns = discovery.SetupDiscovery(node, discoveryName)
+		if mdns == nil {
+			break
+		}
+		log.Println("unable to start the mDNS discovery, next try in 60 seconds ...")
+		time.Sleep(60 * time.Second)
+	}
 
 	//read System Information of peers in a separated thread
 	go receiver.ReadSystemInfo(systemSubscribe, context)
@@ -91,7 +86,7 @@ func main() {
 	go receiver.ReadPingStatus(pingSubscribe, context)
 	//read TCP infos from other Peers in a separated thread
 	go receiver.ReadTCPstatus(tcpSubscribe, context)
-	//read Bandwidth infos from other Peers in a separated thread
+	//read Bandwidth from other Peers in a separated thread
 	go receiver.ReadBandwidth(bandSubscribe, context)
 
 	//Run the program till its stopped (forced)
@@ -99,15 +94,4 @@ func main() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
 	fmt.Println("Received signal, shutting down...")
-}
-
-func createHost() host.Host {
-	// create a new libp2p Host that listens on a TCP port
-	node, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	//if an error appears we try again after 60 second
-	if err != nil {
-		time.Sleep(60 * time.Second)
-		createHost()
-	}
-	return node
 }
