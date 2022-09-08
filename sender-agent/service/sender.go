@@ -5,55 +5,44 @@ import (
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/host"
-	metrics2 "github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	"log"
-	"os"
 	"sender-agent/metrics"
+	"sender-agent/node"
 	"sender-agent/subscriber"
 	"time"
 )
 
 type Sender struct {
-	node      host.Host
-	ip        string
-	counter   *metrics2.BandwidthCounter
-	frequency int
-}
-
-func NewSenderService(node host.Host, ip string, counter *metrics2.BandwidthCounter, frequency int) *Sender {
-	return &Sender{
-		node:      node,
-		ip:        ip,
-		counter:   counter,
-		frequency: frequency}
+	Node      node.Node
+	Frequency int
 }
 
 //SendPeerInfo will send system Information of this Peer and periodically a timestamp
 //in order to calculate the latency in ms between service and service
 func (s *Sender) SendPeerInfo(topic *pubsub.Topic, context context.Context, list *[]peer.AddrInfo) {
-	peerSys := metrics.NewPeerInfo(s.ip, s.node.ID(), os.Getenv("ROLE_HOST"), os.Getenv("NETWORK_NAME"))
+	systemInfo := metrics.NewSystemInfo(s.Node.Ip, s.Node.Host.ID(), s.Node.Role, s.Node.Network)
 
 	for {
 		if len(*list) == 0 {
 			continue
 		}
-		sendPeerInfo(topic, context, peerSys)
+		sendPeerInfo(topic, context, systemInfo)
 
 		//wait some time defined in the frequency before send another systeminfo
-		time.Sleep(time.Duration(s.frequency) * time.Second)
+		time.Sleep(time.Duration(s.Frequency) * time.Second)
 	}
 }
 
-func sendPeerInfo(topic *pubsub.Topic, context context.Context, peer *metrics.PeerInfo) {
+func sendPeerInfo(topic *pubsub.Topic, context context.Context, systemInfo *metrics.SystemInfo) {
 
-	peer.UpdateLoggedInUser()
-	peer.UUID = uuid.New().String()
-	peer.Time = time.Now()
+	systemInfo.UpdateLoggedInUser()
+	systemInfo.UUID = uuid.New().String()
+	systemInfo.Time = time.Now()
 
-	err := subscriber.Publish(peer, context, topic)
+	err := subscriber.Publish(systemInfo, context, topic)
 	if err != nil {
 		log.Println("Error publishing content ", err.Error())
 	}
@@ -62,14 +51,14 @@ func sendPeerInfo(topic *pubsub.Topic, context context.Context, peer *metrics.Pe
 
 // SendCpuInfo function will send periodically information about the CPU
 func (s *Sender) SendCpuInfo(topic *pubsub.Topic, context context.Context, peers *[]peer.AddrInfo) {
-	cpu := metrics.NewCpu(s.ip, s.node.ID().Pretty())
+	cpu := metrics.NewCpu(s.Node.Ip, s.Node.Host.ID().Pretty())
 	for {
 		if len(*peers) == 0 {
 			continue
 		}
 		sendCpuInfo(topic, context, cpu)
 
-		time.Sleep(time.Duration(s.frequency) * time.Second)
+		time.Sleep(time.Duration(s.Frequency) * time.Second)
 	}
 }
 
@@ -90,13 +79,13 @@ func sendCpuInfo(topic *pubsub.Topic, context context.Context, cpu *metrics.Cpu)
 
 // SendRamInfo function will send periodically information about the actual RAM Percentage
 func (s *Sender) SendRamInfo(topic *pubsub.Topic, context context.Context, peers *[]peer.AddrInfo) {
-	ram := metrics.NewRam(s.ip, s.node.ID().Pretty())
+	ram := metrics.NewRam(s.Node.Ip, s.Node.Host.ID().Pretty())
 	for {
 		if len(*peers) == 0 {
 			continue
 		}
 		sendRamInfo(topic, context, ram)
-		time.Sleep(time.Duration(s.frequency) * time.Second)
+		time.Sleep(time.Duration(s.Frequency) * time.Second)
 	}
 }
 
@@ -116,7 +105,7 @@ func sendRamInfo(topic *pubsub.Topic, context context.Context, ram *metrics.Ram)
 
 //SendPing function send a Ping every 60s to the discovered Peer
 //This function is used in order to reach the others nodes in an active way getting
-//a bool if the ping was successfully (true if a node is reachable, false if not) and an RTT in ms
+//a bool if the ping was successfully (true if a Node is reachable, false if not) and an RTT in ms
 func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *pubsub.Topic) {
 
 	var pingDeadlineLimit = 10
@@ -147,24 +136,24 @@ func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *
 }
 
 func (s *Sender) SendTCPstatus(topic *pubsub.Topic, context context.Context, peers *[]peer.AddrInfo) {
-	tcp := metrics.NewTCPstatus(s.ip)
+	tcpStatus := metrics.NewTCPstatus(s.Node.Ip)
 	for {
 		if len(*peers) == 0 {
 			continue
 		}
-		sendTCPstatus(topic, context, tcp)
-		time.Sleep(time.Duration(s.frequency) * time.Second)
+		sendTCPstatus(topic, context, tcpStatus)
+		time.Sleep(time.Duration(s.Frequency) * time.Second)
 	}
 }
 
-func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpIfo *metrics.TCPstatus) {
+func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpStatus *metrics.TCPstatus) {
 
-	tcpIfo.UUID = uuid.New().String()
-	tcpIfo.TcpQueueSize()
-	tcpIfo.TcpSegmentsNumber()
-	tcpIfo.Time = time.Now()
+	tcpStatus.UUID = uuid.New().String()
+	tcpStatus.TcpQueueSize()
+	tcpStatus.TcpSegmentsNumber()
+	tcpStatus.Time = time.Now()
 
-	err := subscriber.Publish(tcpIfo, context, topic)
+	err := subscriber.Publish(tcpStatus, context, topic)
 	if err != nil {
 		log.Println("Error publishing content ", err.Error())
 	}
@@ -179,8 +168,8 @@ func (s *Sender) GetBandWidthForActivePeer(subscribe *pubsub.Subscription, conte
 		if err != nil {
 			log.Println("cannot read from topic")
 		} else {
-			if message.ReceivedFrom.String() != s.node.ID().Pretty() {
-				targetPeer := new(metrics.PeerInfo)
+			if message.ReceivedFrom.String() != s.Node.Host.ID().Pretty() {
+				targetPeer := new(metrics.SystemInfo)
 				json.Unmarshal(message.Data, targetPeer)
 				s.getBandwidth(targetPeer, topic, context)
 			}
@@ -188,11 +177,11 @@ func (s *Sender) GetBandWidthForActivePeer(subscribe *pubsub.Subscription, conte
 	}
 }
 
-func (s *Sender) getBandwidth(peer *metrics.PeerInfo, topic *pubsub.Topic, ctx context.Context) {
+func (s *Sender) getBandwidth(peer *metrics.SystemInfo, topic *pubsub.Topic, ctx context.Context) {
 
-	bandwidth := metrics.NewBandWidth(s.ip, s.node.ID().Pretty())
+	bandwidth := metrics.NewBandWidth(s.Node.Ip, s.Node.Host.ID().Pretty())
 
-	resultBand := s.counter.GetBandwidthForPeer(peer.Id)
+	resultBand := s.Node.Bandcounter.GetBandwidthForPeer(peer.Id)
 
 	bandwidth.Target = peer.Ip
 	bandwidth.TotalIn = resultBand.TotalIn

@@ -5,39 +5,41 @@ import (
 	"encoding/json"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
-	metrics2 "github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	"github.com/stretchr/testify/assert"
+	"sender-agent/config"
 	"sender-agent/metrics"
+	node2 "sender-agent/node"
 	"sender-agent/subscriber"
 	"testing"
 )
 
-func setupEnvironment(t *testing.T) (*pubsub.Topic, *pubsub.Subscription, context.Context, host.Host, *metrics2.BandwidthCounter) {
+func setupEnvironment(t *testing.T) (*pubsub.Topic, *pubsub.Subscription, context.Context, node2.Node, config.Config) {
 	const roomTest = "test"
+	var node node2.Node
+	node.StartNode()
 	ctx := context.Background()
-	bandCounter := metrics2.NewBandwidthCounter()
-	node, _ := libp2p.New(libp2p.BandwidthReporter(bandCounter))
 	psub := subscriber.NewPubSubService(ctx, node)
 	testTopic := psub.JoinTopic(roomTest)
 	subsc := psub.Subscribe(testTopic)
+	conf := config.Config{Frequency: 30, Role: "SENDER", Network: "HOME"}
 
 	t.Cleanup(func() {
-		node.Close()
+		node.Host.Close()
 		ctx.Done()
 		testTopic.Close()
 		subsc.Cancel()
-		bandCounter.Reset()
+		node.Bandcounter.Reset()
 	})
-	return testTopic, subsc, ctx, node, bandCounter
+	return testTopic, subsc, ctx, node, conf
 }
 
 //Here it is tested if the system-information are sent/published
 func TestSendPeerInfo(t *testing.T) {
 	topic, subscr, ctx, _, _ := setupEnvironment(t)
-	peerInfo := metrics.NewPeerInfo("1.1.1.1", "test_ID", "TEST", "HOME")
+	peerInfo := metrics.NewSystemInfo("1.1.1.1", "test_ID", "TEST", "HOME")
 
 	sendPeerInfo(topic, ctx, peerInfo)
 	message, _ := subscr.Next(ctx)
@@ -102,27 +104,26 @@ func secondPeer(t *testing.T, discoveryName string) host.Host {
 }
 
 func TestNewSenderService(t *testing.T) {
-	ip := "1.1.1.1"
-	_, _, _, node, counter := setupEnvironment(t)
+	_, _, _, node, conf := setupEnvironment(t)
 
-	sender := NewSenderService(node, ip, counter, 30)
+	sender := Sender{Node: node, Frequency: conf.Frequency}
 
 	assert.NotNil(t, sender)
 }
 
 func TestSenderGetBandWidth(t *testing.T) {
-	topic, subscr, ctx, node, counter := setupEnvironment(t)
-	sender := NewSenderService(node, "1.1.1.1", counter, 30)
-	discovery := mdns.NewMdnsService(node, "discoveryTest", &discoveryNotifee{node: node})
+	topic, subscr, ctx, node, conf := setupEnvironment(t)
+	sender := Sender{Node: node, Frequency: conf.Frequency}
+	discovery := mdns.NewMdnsService(node.Host, "discoveryTest", &discoveryNotifee{node: node.Host})
 	_ = discovery.Start()
 	peer2 := secondPeer(t, "discoveryTest")
 
 	t.Cleanup(func() {
-		node.Close()
+		node.Host.Close()
 		discovery.Close()
 		peer2.Close()
 	})
-	peer2info := metrics.NewPeerInfo("", peer2.ID(), "", "")
+	peer2info := metrics.NewSystemInfo("", peer2.ID(), "", "")
 
 	sender.getBandwidth(peer2info, topic, ctx)
 	message, _ := subscr.Next(ctx)
