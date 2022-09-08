@@ -16,7 +16,7 @@ create table if not exists peer
     network     text
 );
 
-create unique index peer_uuid_uindex
+create unique index if not exists peer_uuid_uindex
     on peer (uuid);
 
 create table if not exists status
@@ -33,7 +33,7 @@ create table if not exists status
     time     timestamp with time zone
 );
 
-create unique index status_uuid_uindex
+create unique index if not exists status_uuid_uindex
     on status (uuid);
 
 create table if not exists ram
@@ -48,7 +48,7 @@ create table if not exists ram
     time     timestamp with time zone
 );
 
-create unique index ram_uuid_uindex
+create unique index if not exists ram_uuid_uindex
     on ram (uuid);
 
 create table if not exists cpu
@@ -64,7 +64,7 @@ create table if not exists cpu
     time     timestamp with time zone
 );
 
-create unique index cpu_uuid_uindex
+create unique index if not exists cpu_uuid_uindex
     on cpu (uuid);
 
 create table if not exists tcp
@@ -80,7 +80,7 @@ create table if not exists tcp
     time       timestamp with time zone
 );
 
-create unique index tcp_uuid_uindex
+create unique index if not exists tcp_uuid_uindex
     on tcp (uuid);
 
 create table if not exists bandwidth
@@ -98,5 +98,5 @@ create table if not exists bandwidth
     time      timestamp with time zone
 );
 
-create unique index bandwidth_uuid_uindex
+create unique index if not exists bandwidth_uuid_uindex
     on bandwidth (uuid);

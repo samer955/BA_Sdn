@@ -2,8 +2,8 @@ package repository
 
 import (
 	"database/sql"
+	"db-agent/config"
 	"db-agent/variables"
-	"io/ioutil"
 	"log"
 	"time"
 )
@@ -16,17 +16,17 @@ func NewPostGresRepository(db *sql.DB) *PostGresRepo {
 	return &PostGresRepo{db: db}
 }
 
-//Create tables from the migrations file
+var conf = config.GetConfig()
+
 func (r *PostGresRepo) Migrate() {
-	tables, err := ioutil.ReadFile("repository/migrations/000001_init_schema.up.sql")
+	_, err := r.db.Exec(conf.TableSchema)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("unable to execute migration")
+		panic(err)
 	}
-	text := string(tables)
-	r.db.Exec(text)
 }
 
-func (r *PostGresRepo) SaveSystemMessage(peer *variables.PeerInfo, now time.Time, latency int64) {
+func (r *PostGresRepo) SaveSystemInfo(peer *variables.SystemInfo, now time.Time, latency int64) {
 	_, err := r.db.Exec("INSERT INTO peer(node_id,uuid,hostname,ip,latency,platform,version,os,online_user,time,role,network) "+
 		"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
 		peer.Id.Pretty(),
