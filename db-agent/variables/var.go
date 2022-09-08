@@ -5,11 +5,11 @@ import (
 	"time"
 )
 
-type PeerInfo struct {
+type SystemInfo struct {
 	Id         peer.ID   `json:"node_id"`
 	UUID       string    `json:"uuid"`
 	Ip         string    `json:"ip"`
-	Hostname   string    `json:"host"`
+	Hostname   string    `json:"node"`
 	OS         string    `json:"os"`
 	Platform   string    `json:"platform"`
 	Version    string    `json:"version"`
@@ -23,7 +23,7 @@ type Cpu struct {
 	Id       string    `json:"node_id"`
 	UUID     string    `json:"uuid"`
 	Ip       string    `json:"ip"`
-	Hostname string    `json:"host"`
+	Hostname string    `json:"node"`
 	Model    string    `json:"model"`
 	Usage    int       `json:"usage"`
 	Time     time.Time `json:"time"`
@@ -33,7 +33,7 @@ type Ram struct {
 	Id       string    `json:"node_id"`
 	UUID     string    `json:"uuid"`
 	Ip       string    `json:"ip"`
-	Hostname string    `json:"host,omitempty"`
+	Hostname string    `json:"node,omitempty"`
 	Usage    int       `json:"usage, omitempty"`
 	Time     time.Time `json:"time, omitempty"`
 }

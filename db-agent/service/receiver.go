@@ -2,61 +2,54 @@ package service
 
 import (
 	"context"
+	"db-agent/node"
 	"db-agent/repository"
 	"db-agent/variables"
 	"encoding/json"
 	"fmt"
-	"github.com/libp2p/go-libp2p-core/host"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"log"
 	"time"
 )
 
-type receiver struct {
-	node       host.Host
-	repository *repository.PostGresRepo
+type Receiver struct {
+	Node       node.Node
+	Repository repository.Repository
 }
 
-func NewDataCollectorService(node host.Host, repo *repository.PostGresRepo) *receiver {
-	return &receiver{
-		node:       node,
-		repository: repo,
-	}
-}
-
-func (receiver *receiver) ReadSystemInfo(subscribe *pubsub.Subscription, context context.Context) {
+func (receiver *Receiver) ReadSystemInfo(subscribe *pubsub.Subscription, context context.Context) {
 	for {
 		func() {
+			//defer handlePanicError recovers the state of the program if an error occurs: fundamental if two DB-Agent are used e.g: storing same UUID
 			defer handlePanicError()
 			message, err := subscribe.Next(context)
 			if err != nil {
 				log.Println("cannot read from topic")
 			} else {
-				if message.ReceivedFrom.String() != receiver.node.ID().Pretty() {
+				if message.ReceivedFrom.String() != receiver.Node.Host.ID().Pretty() {
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
-
-					peer := new(variables.PeerInfo)
-					//Unmarshal the file into the peer struct
-					json.Unmarshal(message.Data, peer)
 
 					//Get the actual time
 					now := time.Now()
+					//empty systemInfo struct, here will be copied the content of the message
+					systemInfo := new(variables.SystemInfo)
+					//Unmarshal the file into the systemInfo struct
+					json.Unmarshal(message.Data, systemInfo)
+					//Latency is calculated from the time when the sender-agent send the message
+					//and when the service reads it (in ms)
+					latency := latencyCalculate(now.UnixMilli(), systemInfo.Time.UnixMilli())
 
-					//Latency is calculated from the time when the peer send the message
-					//and when the service reads it (in millis)
-					latency := latencyCalculate(now.UnixMilli(), peer.Time.UnixMilli())
+					log.Printf("latency node %s: %d ms\n", message.ReceivedFrom.Pretty(), latency)
 
-					log.Println("latency :", latency)
-
-					//Here we store latency of the peer in the database as well as system information
-					receiver.repository.SaveSystemMessage(peer, now, latency)
+					//Storing system info in the db
+					receiver.Repository.SaveSystemInfo(systemInfo, now, latency)
 				}
 			}
 		}()
 	}
 }
 
-func (receiver *receiver) ReadRamInformation(subscribe *pubsub.Subscription, ctx context.Context) {
+func (receiver *Receiver) ReadRamInformation(subscribe *pubsub.Subscription, ctx context.Context) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -64,24 +57,21 @@ func (receiver *receiver) ReadRamInformation(subscribe *pubsub.Subscription, ctx
 			if err != nil {
 				log.Println("cannot read from topic")
 			} else {
-				if message.ReceivedFrom.String() != receiver.node.ID().Pretty() {
+				if message.ReceivedFrom.String() != receiver.Node.Host.ID().Pretty() {
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
 					ram := new(variables.Ram)
-
 					//parse the JSON-encoded data and store the result into ram
 					json.Unmarshal(message.Data, ram)
 
-					//Here we store cpu usage percentage of the peer in the database as well
-					//as node_id, ip_address to identify the peer
-					receiver.repository.SaveRamInfo(ram)
+					receiver.Repository.SaveRamInfo(ram)
 				}
 			}
 		}()
 	}
 }
 
-func (receiver *receiver) ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context) {
+func (receiver *Receiver) ReadCpuInformation(subscribe *pubsub.Subscription, ctx context.Context) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -89,7 +79,7 @@ func (receiver *receiver) ReadCpuInformation(subscribe *pubsub.Subscription, ctx
 			if err != nil {
 				log.Println("cannot read from topic")
 			} else {
-				if message.ReceivedFrom.String() != receiver.node.ID().Pretty() {
+				if message.ReceivedFrom.String() != receiver.Node.Host.ID().Pretty() {
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
 					cpu := new(variables.Cpu)
@@ -97,16 +87,14 @@ func (receiver *receiver) ReadCpuInformation(subscribe *pubsub.Subscription, ctx
 					//parse the JSON-encoded data and store the result into cpu
 					json.Unmarshal(message.Data, cpu)
 
-					//Here we store cpu usage percentage of the peer in the database as well
-					//as node_id, ip_address to identify the peer
-					receiver.repository.SaveCpuIfo(cpu)
+					receiver.Repository.SaveCpuIfo(cpu)
 				}
 			}
 		}()
 	}
 }
 
-func (receiver *receiver) ReadPingStatus(subscribe *pubsub.Subscription, ctx context.Context) {
+func (receiver *Receiver) ReadPingStatus(subscribe *pubsub.Subscription, ctx context.Context) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -114,25 +102,26 @@ func (receiver *receiver) ReadPingStatus(subscribe *pubsub.Subscription, ctx con
 			if err != nil {
 				log.Println("cannot read from topic")
 			} else {
-				if message.ReceivedFrom.String() != receiver.node.ID().Pretty() {
+				if message.ReceivedFrom.String() != receiver.Node.Host.ID().Pretty() {
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
-					status := new(variables.PingStatus)
+					pingStatus := new(variables.PingStatus)
 					//parse the JSON-encoded data and store the result into cpu
-					json.Unmarshal(message.Data, status)
+					json.Unmarshal(message.Data, pingStatus)
 
-					sourceIp := receiver.repository.GetIpFromNode(status.Source)
-					targetIp := receiver.repository.GetIpFromNode(status.Target)
-					status.SourceIp = sourceIp
-					status.TargetIp = targetIp
-					receiver.repository.SavePingStatus(status)
+					//get the ip source/target from the repository and save it in the pingStatus
+					sourceIp := receiver.Repository.GetIpFromNode(pingStatus.Source)
+					targetIp := receiver.Repository.GetIpFromNode(pingStatus.Target)
+					pingStatus.SourceIp = sourceIp
+					pingStatus.TargetIp = targetIp
+					receiver.Repository.SavePingStatus(pingStatus)
 				}
 			}
 		}()
 	}
 }
 
-func (receiver *receiver) ReadTCPstatus(subscribe *pubsub.Subscription, ctx context.Context) {
+func (receiver *Receiver) ReadTCPstatus(subscribe *pubsub.Subscription, ctx context.Context) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -140,21 +129,21 @@ func (receiver *receiver) ReadTCPstatus(subscribe *pubsub.Subscription, ctx cont
 			if err != nil {
 				log.Println("cannot read from topic")
 			} else {
-				if message.ReceivedFrom.String() != receiver.node.ID().Pretty() {
+				if message.ReceivedFrom.String() != receiver.Node.Host.ID().Pretty() {
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
 					tcpStat := new(variables.TCPstatus)
 					//parse the JSON-encoded data and store the result into cpu
 					json.Unmarshal(message.Data, tcpStat)
 
-					receiver.repository.SaveTCPstatus(tcpStat)
+					receiver.Repository.SaveTCPstatus(tcpStat)
 				}
 			}
 		}()
 	}
 }
 
-func (receiver *receiver) ReadBandwidth(subscribe *pubsub.Subscription, ctx context.Context) {
+func (receiver *Receiver) ReadBandwidth(subscribe *pubsub.Subscription, ctx context.Context) {
 	for {
 		func() {
 			defer handlePanicError()
@@ -162,14 +151,14 @@ func (receiver *receiver) ReadBandwidth(subscribe *pubsub.Subscription, ctx cont
 			if err != nil {
 				log.Println("cannot read from topic")
 			} else {
-				if message.ReceivedFrom.String() != receiver.node.ID().Pretty() {
+				if message.ReceivedFrom.String() != receiver.Node.Host.ID().Pretty() {
 					log.Printf("Message: <%s> %s", message.Data, message.ReceivedFrom.String())
 
 					bandwidth := new(variables.Bandwidth)
 					//parse the JSON-encoded data and store the result into cpu
 					json.Unmarshal(message.Data, bandwidth)
 
-					receiver.repository.SaveBandwidth(bandwidth)
+					receiver.Repository.SaveBandwidth(bandwidth)
 				}
 			}
 		}()
