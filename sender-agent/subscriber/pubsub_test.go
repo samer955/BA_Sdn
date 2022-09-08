@@ -4,17 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/stretchr/testify/assert"
+	"sender-agent/node"
 	"testing"
 )
 
-func setupEnvironment(t *testing.T) (host.Host, context.Context) {
+func setupEnvironment(t *testing.T) (node.Node, context.Context) {
 	ctx := context.Background()
-	node, _ := libp2p.New()
+	host, _ := libp2p.New()
+	node := node.Node{Host: host}
 
 	t.Cleanup(func() {
-		node.Close()
+		node.Host.Close()
 		ctx.Done()
 	})
 	return node, ctx

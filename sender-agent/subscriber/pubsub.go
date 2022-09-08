@@ -3,11 +3,9 @@ package subscriber
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-pubsub"
 	"log"
-	"time"
+	"sender-agent/node"
 )
 
 type PubSubService struct {
@@ -15,12 +13,10 @@ type PubSubService struct {
 }
 
 // NewPubSubService return a new PubSub Service using the GossipSub Service
-func NewPubSubService(ctx context.Context, host host.Host) *PubSubService {
-
-	ps, err := pubsub.NewGossipSub(ctx, host)
+func NewPubSubService(ctx context.Context, node node.Node) *PubSubService {
+	ps, err := pubsub.NewGossipSub(ctx, node.Host)
 	if err != nil {
-		time.Sleep(60 * time.Second)
-		NewPubSubService(ctx, host)
+		log.Println("unable to create the pubsub service")
 	}
 	return &PubSubService{psub: ps}
 }
@@ -42,7 +38,7 @@ func (service *PubSubService) Subscribe(topic *pubsub.Topic) *pubsub.Subscriptio
 
 	subscribe, err := topic.Subscribe()
 
-	if (err) != nil {
+	if err != nil {
 		log.Println("cannot subscribe to: ", topic.String())
 	} else {
 		log.Println("Subscribed to topic: " + subscribe.Topic())
@@ -56,7 +52,7 @@ func Publish(object interface{}, context context.Context, topic *pubsub.Topic) e
 	msgBytes, err := json.Marshal(object)
 
 	if err != nil {
-		fmt.Println("cannot convert to Bytes ", object)
+		log.Println("cannot convert to Bytes ", object)
 	}
 	//public the data in the topic
 	return topic.Publish(context, msgBytes)
