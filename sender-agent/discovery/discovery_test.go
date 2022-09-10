@@ -64,7 +64,7 @@ func TestDiscoveryHandlePeerFound(t *testing.T) {
 		if time.Now().After(limit.Add(4 * time.Second)) {
 			break
 		}
-		if len(PeerList) == 0 {
+		if len(testNode.Host.Peerstore().Peers()) == 1 {
 			continue
 		}
 		break

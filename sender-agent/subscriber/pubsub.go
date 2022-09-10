@@ -30,7 +30,9 @@ func (service *PubSubService) JoinTopic(room string) *pubsub.Topic {
 	} else {
 		log.Println("Joined room:", room)
 	}
+
 	return topic
+
 }
 
 // Subscribe returns a new Subscription for the topic.

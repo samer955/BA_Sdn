@@ -22,11 +22,13 @@ type Sender struct {
 
 //SendPeerInfo will send system Information of this Peer and periodically a timestamp
 //in order to calculate the latency in ms between service and service
-func (s *Sender) SendPeerInfo(topic *pubsub.Topic, context context.Context, list *[]peer.AddrInfo) {
+func (s *Sender) SendPeerInfo(topic *pubsub.Topic, context context.Context) {
 	systemInfo := metrics.NewSystemInfo(s.Node.Ip, s.Node.Host.ID(), s.Node.Role, s.Node.Network)
 
 	for {
-		if len(*list) == 0 {
+		//the key of the local node is also present in the peerstore, so we check if this is == 1
+		//the node waits to connect to another node before sending his information
+		if len(s.Node.Host.Peerstore().Peers()) == 1 {
 			continue
 		}
 		sendPeerInfo(topic, context, systemInfo)
@@ -45,15 +47,16 @@ func sendPeerInfo(topic *pubsub.Topic, context context.Context, systemInfo *metr
 	err := subscriber.Publish(systemInfo, context, topic)
 	if err != nil {
 		log.Println("Error publishing content ", err.Error())
+		return
 	}
 	log.Println("sending system info...")
 }
 
 // SendCpuInfo function will send periodically information about the CPU
-func (s *Sender) SendCpuInfo(topic *pubsub.Topic, context context.Context, peers *[]peer.AddrInfo) {
+func (s *Sender) SendCpuInfo(topic *pubsub.Topic, context context.Context) {
 	cpu := metrics.NewCpu(s.Node.Ip, s.Node.Host.ID().Pretty())
 	for {
-		if len(*peers) == 0 {
+		if len(s.Node.Host.Peerstore().Peers()) == 1 {
 			continue
 		}
 		sendCpuInfo(topic, context, cpu)
@@ -73,15 +76,16 @@ func sendCpuInfo(topic *pubsub.Topic, context context.Context, cpu *metrics.Cpu)
 
 	if err != nil {
 		log.Println("Error publishing content ", err.Error())
+		return
 	}
 	log.Println("sending cpu...")
 }
 
 // SendRamInfo function will send periodically information about the actual RAM Percentage
-func (s *Sender) SendRamInfo(topic *pubsub.Topic, context context.Context, peers *[]peer.AddrInfo) {
+func (s *Sender) SendRamInfo(topic *pubsub.Topic, context context.Context) {
 	ram := metrics.NewRam(s.Node.Ip, s.Node.Host.ID().Pretty())
 	for {
-		if len(*peers) == 0 {
+		if len(s.Node.Host.Peerstore().Peers()) == 1 {
 			continue
 		}
 		sendRamInfo(topic, context, ram)
@@ -99,14 +103,15 @@ func sendRamInfo(topic *pubsub.Topic, context context.Context, ram *metrics.Ram)
 	err := subscriber.Publish(ram, context, topic)
 	if err != nil {
 		log.Println("Error publishing content ", err.Error())
+		return
 	}
 	log.Println("sending ram...")
 }
 
-//SendPing function send a Ping every 60s to the discovered Peer
+//Ping function send a Ping every 45s to the new discovered Peer
 //This function is used in order to reach the others nodes in an active way getting
 //a bool if the ping was successfully (true if a Node is reachable, false if not) and an RTT in ms
-func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *pubsub.Topic) {
+func Ping(ctx context.Context, host host.Host, target peer.AddrInfo, topic *pubsub.Topic) {
 
 	var pingDeadlineLimit = 10
 	var actualNegativePing = 0
@@ -135,10 +140,10 @@ func SendPing(ctx context.Context, host host.Host, target peer.AddrInfo, topic *
 	}
 }
 
-func (s *Sender) SendTCPstatus(topic *pubsub.Topic, context context.Context, peers *[]peer.AddrInfo) {
+func (s *Sender) SendTCPstatus(topic *pubsub.Topic, context context.Context) {
 	tcpStatus := metrics.NewTCPstatus(s.Node.Ip)
 	for {
-		if len(*peers) == 0 {
+		if len(s.Node.Host.Peerstore().Peers()) == 1 {
 			continue
 		}
 		sendTCPstatus(topic, context, tcpStatus)
@@ -156,11 +161,12 @@ func sendTCPstatus(topic *pubsub.Topic, context context.Context, tcpStatus *metr
 	err := subscriber.Publish(tcpStatus, context, topic)
 	if err != nil {
 		log.Println("Error publishing content ", err.Error())
+		return
 	}
 	log.Println("sending TCP-info...")
 }
 
-//GetBandWidthForActivePeer listens on the sytemtopic to get the information about an online Peer in order to get
+//GetBandWidthForActivePeer listens on the sytemtopic to get the information about an online Peer to get
 //the Bandwidth between them
 func (s *Sender) GetBandWidthForActivePeer(subscribe *pubsub.Subscription, context context.Context, topic *pubsub.Topic) {
 	for {
@@ -194,6 +200,7 @@ func (s *Sender) getBandwidth(peer *metrics.SystemInfo, topic *pubsub.Topic, ctx
 	err := subscriber.Publish(bandwidth, ctx, topic)
 	if err != nil {
 		log.Println("Error publishing content ", err.Error())
+		return
 	}
 	log.Println("sending Bandwidth...")
 }

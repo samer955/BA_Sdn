@@ -15,7 +15,6 @@ type discoveryNotifee struct {
 	node host.Host
 }
 
-var PeerList []peer.AddrInfo
 var pingTopic *pubsub.Topic
 
 //used to publish the ping results on this topic after discovering a new peer
@@ -33,10 +32,9 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 			log.Printf("unable to connect to Peer %s ", info.ID.Pretty())
 			return
 		}
-		PeerList = append(PeerList, info)
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
 		//once discovered a new Peer the local Host start to ping it. The result will be published in the pingTopic
-		service.SendPing(context.Background(), d.node, info, pingTopic)
+		service.Ping(context.Background(), d.node, info, pingTopic)
 	}
 }
 

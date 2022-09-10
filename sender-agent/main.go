@@ -64,13 +64,13 @@ func main() {
 	sender := service.Sender{Node: Node, Frequency: config.GetConfig().Frequency}
 
 	//send Peer-System-Information in a separated thread
-	go sender.SendPeerInfo(systemTopic, context, &discovery.PeerList)
+	go sender.SendPeerInfo(systemTopic, context)
 	//send CPU information in a separated thread
-	go sender.SendCpuInfo(cpuTopic, context, &discovery.PeerList)
+	go sender.SendCpuInfo(cpuTopic, context)
 	//send RAM information in a separated thread
-	go sender.SendRamInfo(ramTopic, context, &discovery.PeerList)
+	go sender.SendRamInfo(ramTopic, context)
 	//send tcp status in a separated thread
-	go sender.SendTCPstatus(tcpTopic, context, &discovery.PeerList)
+	go sender.SendTCPstatus(tcpTopic, context)
 	//Get Bandwidth between local Peer and other connected Peers in a separated thread
 	go sender.GetBandWidthForActivePeer(systemSubscr, context, bandTopic)
 

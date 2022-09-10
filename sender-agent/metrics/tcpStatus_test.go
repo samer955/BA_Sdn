@@ -50,8 +50,8 @@ func TestTcpSegmentsWindows(t *testing.T) {
 		"\n  Failed Connection Attempts          = 13218" +
 		"\n  Reset Connections                   = 272367" +
 		"\n  Current Connections                 = 44" +
-		"\n  Segments Received                   = 8011276" +
-		"\n  Segments Sent                       = 7388244" +
+		"\n  Segments Sent                   = 8011276" +
+		"\n  Segments Received                       = 7388244" +
 		"\n  Segments Retransmitted              = 34858" +
 		"\n" +
 		"\nTCP Statistics for IPv6" +
@@ -60,16 +60,16 @@ func TestTcpSegmentsWindows(t *testing.T) {
 		"\n  Passive Opens                       = 172" +
 		"\n  No Ports              = 48499" +
 		"\n  Receive Errors        = 4" +
-		"\n  Datagrams Sent        = 1901984" +
+		"\n  Datagrams Received        = 1901984" +
 		"\n" +
 		"\nUDP Statistics for IPv6" +
 		"\n" +
-		"\n  Datagrams Received    = 1312791" +
+		"\n  Datagrams Sent    = 1312791" +
 		"\n  No Ports              = 0" +
 		"\n  Receive Errors        = 0" +
-		"\n  Datagrams Sent        = 335866\n"
+		"\n  Datagrams Received        = 335866\n"
 
-	var expReceived, expSent = 8011276, 7388244
+	var expReceived, expSent = 7388244, 8011276
 	var gotReceived, gotSent, _ = numberOfSegmentsWindows(netstatOutput)
 
 	if expReceived != gotReceived {

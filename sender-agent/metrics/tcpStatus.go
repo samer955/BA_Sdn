@@ -19,9 +19,9 @@ type TCPstatus struct {
 	UUID      string    `json:"uuid"`
 	Hostname  string    `json:"hostname"`
 	Ip        string    `json:"ip"`
-	QueueSize int       `json:"queue_size"`
-	Received  int       `json:"received"`
-	Sent      int       `json:"sent"`
+	QueueSize int       `json:"tcp_queue_size"`
+	Received  int       `json:"segments_received"`
+	Sent      int       `json:"segments_sent"`
 	Time      time.Time `json:"time"`
 }
 
@@ -160,20 +160,20 @@ func numberOfSegmentsWindows(s string) (int, int, error) {
 			continue
 		}
 		words := strings.Fields(line)
-		if strings.Contains(words[0], "Segments") && strings.Contains(words[1], "Received") {
-			value, err := strconv.Atoi(words[3])
-			if err != nil {
-				fmt.Println(err)
-			} else {
-				segmentsReceived += value
-			}
-		}
 		if strings.Contains(words[0], "Segments") && strings.Contains(words[1], "Sent") {
 			value, err := strconv.Atoi(words[3])
 			if err != nil {
 				fmt.Println(err)
 			} else {
 				segmentsSent += value
+			}
+		}
+		if strings.Contains(words[0], "Segments") && strings.Contains(words[1], "Received") {
+			value, err := strconv.Atoi(words[3])
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				segmentsReceived += value
 			}
 		}
 	}
