@@ -131,7 +131,7 @@ func TestReceiver_ReadBandwidth(t *testing.T) {
 
 func TestReceiver_ReadTCPstatus(t *testing.T) {
 	topic, subscr, ctx, node := setupEnvironment(t)
-	tcp := variables.TCPstatus{QueueSize: 15, Received: 20, Sent: 20}
+	tcp := variables.TCPstatus{QueueSize: 15, Sent: 20, Received: 20}
 	msg, _ := json.Marshal(tcp)
 	topic.Publish(ctx, msg)
 	var mockrepo = &MockRepo{}
@@ -140,8 +140,8 @@ func TestReceiver_ReadTCPstatus(t *testing.T) {
 	receiver.readTCPstatus(subscr, ctx)
 
 	assert.Equal(t, mockrepo.tcp.QueueSize, 15)
-	assert.Equal(t, mockrepo.tcp.Received, 20)
 	assert.Equal(t, mockrepo.tcp.Sent, 20)
+	assert.Equal(t, mockrepo.tcp.Received, 20)
 }
 
 func TestReceiver_ReadSystemInfo(t *testing.T) {

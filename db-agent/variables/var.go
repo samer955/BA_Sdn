@@ -9,7 +9,7 @@ type SystemInfo struct {
 	Id         peer.ID   `json:"node_id"`
 	UUID       string    `json:"uuid"`
 	Ip         string    `json:"ip"`
-	Hostname   string    `json:"node"`
+	Hostname   string    `json:"hostname"`
 	OS         string    `json:"os"`
 	Platform   string    `json:"platform"`
 	Version    string    `json:"version"`
@@ -70,8 +70,8 @@ type TCPstatus struct {
 	UUID      string    `json:"uuid"`
 	Hostname  string    `json:"hostname"`
 	Ip        string    `json:"ip"`
-	QueueSize int       `json:"queue_size"`
-	Received  int       `json:"received"`
-	Sent      int       `json:"sent"`
+	QueueSize int       `json:"tcp_queue_size"`
+	Received  int       `json:"segments_received"`
+	Sent      int       `json:"segments_sent"`
 	Time      time.Time `json:"time"`
 }

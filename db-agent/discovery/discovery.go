@@ -13,8 +13,6 @@ type discoveryNotifee struct {
 	node host.Host
 }
 
-var PeerList []peer.AddrInfo
-
 func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 
 	if d.node.ID().Pretty() != info.ID.Pretty() {
@@ -25,7 +23,6 @@ func (d *discoveryNotifee) HandlePeerFound(info peer.AddrInfo) {
 			log.Printf("unable to connect to Peer %s ", info.ID.Pretty())
 			return
 		}
-		PeerList = append(PeerList, info)
 		log.Printf("connected to Peer %s ", info.ID.Pretty())
 	}
 
