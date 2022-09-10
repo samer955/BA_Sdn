@@ -77,6 +77,6 @@ func (n *Node) StartNode() {
 	n.createBandCounter()
 	n.getConfig()
 	n.createLibp2pNode()
-	log.Println("created new node:", n.Host.ID().Pretty())
+	log.Printf("created new node: %s with Role: %s", n.Host.ID().Pretty(), n.Role)
 
 }

@@ -57,17 +57,15 @@ func platformInformation() (string, string, string) {
 	return platform, version, os
 }
 
-func (p *SystemInfo) UpdateLoggedInUser() {
+func (s *SystemInfo) UpdateLoggedInUser() {
 	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
 		output, _ := exec.Command("who").Output()
-		users := outputToIntUserLinux(string(output))
-		p.OnlineUser = users
+		s.OnlineUser = outputToIntUserLinux(string(output))
 		return
 	}
 	if runtime.GOOS == "windows" {
 		output, _ := exec.Command("query", "user").Output()
-		users := outputToIntUserWin(string(output))
-		p.OnlineUser = users
+		s.OnlineUser = outputToIntUserWin(string(output))
 		return
 	}
 	return
