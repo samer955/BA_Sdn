@@ -17,7 +17,7 @@ type SystemInfo struct {
 	UUID       string    `json:"uuid"`
 	Ip         string    `json:"ip"`
 	Network    string    `json:"network"`
-	Hostname   string    `json:"node,omitempty"`
+	Hostname   string    `json:"hostname"`
 	OS         string    `json:"os"`
 	Platform   string    `json:"platform"`
 	Version    string    `json:"version"`
