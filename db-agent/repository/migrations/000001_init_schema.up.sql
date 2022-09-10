@@ -1,7 +1,7 @@
-create table if not exists peer
+create table if not exists system
 (
     uuid        text not null
-        constraint peer_pk
+        constraint system_pk
             primary key,
     hostname    text,
     ip          text,
@@ -16,13 +16,13 @@ create table if not exists peer
     network     text
 );
 
-create unique index if not exists peer_uuid_uindex
-    on peer (uuid);
+create unique index if not exists system_uuid_uindex
+    on system (uuid);
 
-create table if not exists status
+create table if not exists ping
 (
     uuid     text not null
-        constraint status_pk
+        constraint ping_pk
             primary key,
     source   text,
     source_ip   text,
@@ -33,8 +33,8 @@ create table if not exists status
     time     timestamp with time zone
 );
 
-create unique index if not exists status_uuid_uindex
-    on status (uuid);
+create unique index if not exists ping_uuid_uindex
+    on ping (uuid);
 
 create table if not exists ram
 (

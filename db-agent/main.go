@@ -36,10 +36,13 @@ func main() {
 
 	context := context.Background()
 
-	node.StartNode()
+	config.LoadEnv()
 	config := config.GetConfig()
 
-	//initialize Repository and DataCollector
+	//initialize node
+	node.StartNode()
+
+	//initialize Repository and Receiver service
 	repo := repository.NewPostGresRepository(config.Connection)
 	repo.Migrate()
 	receiver := service.Receiver{Repository: repo, Node: node}

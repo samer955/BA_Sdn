@@ -17,6 +17,7 @@ type SystemInfo struct {
 	Network    string    `json:"network"`
 	Time       time.Time `json:"time"`
 	OnlineUser int       `json:"online_user"`
+	Latency    int64     `json:"latency"`
 }
 
 type Cpu struct {
