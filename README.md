@@ -10,6 +10,8 @@ An application to discover and monitor network nodes (which support mDNS impleme
 
 ### Sender-Agent
 
+The ``sender.env`` doesn't need to be extra configured if you want to test the app.
+
 Run the command ``go build`` inside the sender-agent folder to create an executable file:
 
 ``C:\Users\s.osman\Desktop\Discovery_mDNS\sender-agent> go build``
@@ -29,6 +31,8 @@ Now Run the sender-agent in another computer so that they find and connect to ea
 
 To store the data sent by the sender-agent, the db-agent has to be started:
 
+The ``db.env`` file is already configured for the localhost.
+
 Run the command ``docker-compose up -d`` inside the db-agent folder to start Postgres and Grafana in a container.
 
 ``C:\Users\s.osman\Desktop\Discovery_mDNS\db-agent> docker-compose up -d``
@@ -39,7 +43,7 @@ In the terminal you will see all the message sent by the others agents.
 
 ### Visualisation with Grafana
 
-Go to http://localhost:3000
+Now if you want to visualize the data stored and monitor the metrics go to http://localhost:3000
 
 ![plot](./docu_pictures/grafana.png)
 
