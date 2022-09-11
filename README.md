@@ -3,7 +3,7 @@ An application to discover and monitor network nodes (which support mDNS impleme
 
 ## Requirements
 
-* `Golang 1.18` to build the program
+* `Golang 1.18` to build the program. (With the new Version of Golang 1.19 there are for the moment compatibility problem)
 * `Docker` to start the containers for: PostgreSQL-Database (store the data) and Grafana (display the data with dashboards)
 
 ## Installation:
@@ -25,6 +25,8 @@ Now Run the sender-agent in another computer so that they find and connect to ea
 
 
 ### DB-Agent
+
+To store the data sent by the sender-agent, the db-agent has to be started:
 
 Run the command ``docker-compose up -d`` inside the db-agent folder to start Postgres and Grafana in a container.
 
