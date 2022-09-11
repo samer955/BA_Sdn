@@ -41,7 +41,7 @@ build an executable file with ``go build`` and run it as in the sender-agent.
 
 In the terminal you will see all the message sent by the others agents. 
 
-### Visualisation with Grafana
+## Visualisation with Grafana
 
 Now if you want to visualize the data stored and monitor the metrics go to http://localhost:3000
 
