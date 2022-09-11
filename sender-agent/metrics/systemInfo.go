@@ -44,7 +44,7 @@ func NewSystemInfo(ip string, nodeId peer.ID, role string, network string) *Syst
 	}
 }
 
-//Return different string as platform, version und os. https://github.com/shirou/gopsutil library was used fot this method.
+//Return different string as platform, version und os. hostStat is gotten from https://github.com/shirou/gopsutil 
 func platformInformation() (string, string, string) {
 	hostStat, err := host.Info()
 	if err != nil {
