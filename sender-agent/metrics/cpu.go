@@ -35,7 +35,7 @@ func NewCpu(ip, nodeId string) *Cpu {
 	}
 }
 
-//return Cpu Model
+//return Cpu Model. Library gopsutil is used https://github.com/shirou/gopsutil
 func cpuModel() string {
 	cpuStat, err := cpu.Info()
 	if err != nil {
@@ -44,7 +44,7 @@ func cpuModel() string {
 	return cpuStat[0].ModelName
 }
 
-//Get the actual CPU Percentage from the system
+//Get the actual CPU Percentage from the system with gopsutil
 func (c *Cpu) UpdateCpuPercentage() {
 	c.Time = time.Now()
 	cpuUsage, err := cpu.Percent(0, false)
