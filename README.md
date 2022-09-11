@@ -9,6 +9,7 @@ An application to discover and monitor network nodes (which support mDNS impleme
 ## Installation:
 
 ### Sender-Agent
+
 Run the command ``go build`` inside the sender-agent folder to create an executable file:
 
 ``C:\Users\s.osman\Desktop\Discovery_mDNS\sender-agent> go build``
@@ -17,7 +18,7 @@ Run the exe file with:
 
 ``C:\Users\s.osman\Desktop\Discovery_mDNS\sender-agent> .\sender-agent.exe`` in Windows.
 
-Or ``./sender-agent`` in Linux
+Or ``./sender-agent`` in Linux.
 
 You will maybe be asked by your firewall to allow the app.
 
@@ -32,9 +33,9 @@ Run the command ``docker-compose up -d`` inside the db-agent folder to start Pos
 
 ``C:\Users\s.osman\Desktop\Discovery_mDNS\db-agent> docker-compose up -d``
 
-build the exec File with ``go build`` and run it as in the sender-agent.
+build an executable file with ``go build`` and run it as in the sender-agent.
 
-In the terminal you will see all the message sent by the others sender-agent. 
+In the terminal you will see all the message sent by the others agents. 
 
 ### Visualisation with Grafana
 
