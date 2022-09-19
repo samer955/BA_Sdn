@@ -12,6 +12,8 @@ An application to discover and monitor network nodes (which support mDNS impleme
 
 ### Sender-Agent
 
+The Sender-Agent discovers/connects to other hosts and collects metrics of the system. 
+
 The ``sender.env`` doesn't need to be extra configured if you want to test the app.
 
 Run the command ``go build`` inside the sender-agent folder to create an executable file:
