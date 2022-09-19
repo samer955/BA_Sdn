@@ -1,6 +1,8 @@
 # Network Discovery with mDNS
 An application to discover and monitor network nodes (which support mDNS implemented by Libp2p) in a LAN.
 
+![plot](./docu_pictures/overview.png)
+
 ## Requirements
 
 * `Golang 1.18` to build the program. (With the new Version of Golang 1.19 there are for the moment compatibility problem)
